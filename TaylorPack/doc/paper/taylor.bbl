@@ -1,0 +1,190 @@
+\newcommand{\etalchar}[1]{$^{#1}$}
+\newcommand{\noopsort}[1]{}
+\begin{thebibliography}{CGH{\etalchar{+}}97}
+
+\bibitem[Bar80]{Bart80a}
+D.~Barton.
+\newblock On {T}aylor series and stiff equations.
+\newblock {\em ACM Trans. Math. Software}, 6(3):280--294, 1980.
+
+\bibitem[BBCG96]{BerzBCG96}
+M.~Berz, C.~Bischof, G.F. Corliss, and A.~Griewank, editors.
+\newblock {\em Computational Differentiation: Techniques, Applications, and
+  Tools}.
+\newblock SIAM, Philadelphia, Penn., 1996.
+
+\bibitem[BCCG92]{BischofCCG92}
+C.H. Bischof, A.~Carle, G.F. Corliss, and A.~Griewank.
+\newblock {ADIFOR}: {A}utomatic differentiation in a source translation
+  environment.
+\newblock In Paul~S. Wang, editor, {\em Proceedings of the International
+  Symposium on Symbolic and Algebraic Computation}, pages 294--302, New York,
+  1992. ACM Press.
+
+\bibitem[BKSF59]{Beda59}
+L.M. Beda, L.N. Korolev, N.V. Sukkikh, and T.S. Frolova.
+\newblock Programs for automatic differentiation for the machine {BESM}.
+\newblock {T}echnical {R}eport, Institute for Precise Mechanics and Computation
+  Techniques, Academy of Science, Moscow, USSR, 1959.
+\newblock (In Russian).
+
+\bibitem[Bro71]{Broucke71}
+R.~Broucke.
+\newblock Solution of the ${N}$-{B}ody {P}roblem with recurrent power series.
+\newblock {\em Celestial Mech.}, 4(1):110--115, 1971.
+
+\bibitem[BWZ70]{BartWZ70a}
+D.~Barton, I.M. Willers, and R.V.M. Zahar.
+\newblock The automatic solution of ordinary differential equations by the
+  method of {T}aylor series.
+\newblock {\em Computer J.}, 14(3):243--248, 1970.
+
+\bibitem[CC82]{CorlissC82}
+G.F. Corliss and Y.F. Chang.
+\newblock Solving ordinary differential equations using {T}aylor series.
+\newblock {\em ACM Trans. Math. Software}, 8(2):114--144, 1982.
+
+\bibitem[CC94]{ChangC94}
+Y.F. Chang and G.F. Corliss.
+\newblock {ATOMFT}: {S}olving {ODEs} and {DAEs} using {T}aylor series.
+\newblock {\em Computers and Mathematics with Applications}, 28:209--233, 1994.
+
+\bibitem[CGH{\etalchar{+}}97]{CorlissGHKPS97}
+G.F. Corliss, A.~Griewank, P.~Henneberger, G.~Kirlinger, F.A. Potra, and H.J.
+  Stetter.
+\newblock High-order stiff {O}{D}{E} solvers via automatic differentiation and
+  rational prediction.
+\newblock In {\em Numerical analysis and its applications (Rousse, 1996)},
+  pages 114--125. Springer, Berlin, 1997.
+
+\bibitem[Cor95]{Corliss95}
+G.F. Corliss.
+\newblock Guaranteed error bounds for ordinary differential equations.
+\newblock In M.~Ainsworth, J.~Levesley, W.~A. Light, and M.~Marletta, editors,
+  {\em Theory of Numerics in Ordinary and Partial Differential Equations},
+  pages 1--75. Oxford University Press, Oxford, 1995.
+\newblock Lecture notes for a sequence of five lectures at the VI-th SERC
+  Numerical Analysis Summer School, Leicester University, 25 - 29 July, 1994.
+
+\bibitem[GC91]{GriewankC91}
+A.~Griewank and G.F. Corliss, editors.
+\newblock {\em Automatic Differentiation of Algorithms: Theory, Implementation,
+  and Application}.
+\newblock SIAM, Philadelphia, Penn., 1991.
+
+\bibitem[Gib60]{Gibbons60a}
+A.~Gibbons.
+\newblock A program for the automatic integration of differential equations
+  using the method of {T}aylor series.
+\newblock {\em Comp. J.}, 3:108--111, 1960.
+
+\bibitem[Gri00]{Griewank00}
+A.~Griewank.
+\newblock {\em Evaluating Derivatives}.
+\newblock SIAM, Philadelphia, Penn., 2000.
+
+\bibitem[HNW00]{HairerNW00}
+E.~Hairer, S.~P. N{\o}rsett, and G.~Wanner.
+\newblock {\em Solving ordinary differential equations~I. {N}onstiff problems},
+  volume~8 of {\em Springer Series in Computational Mathematics}.
+\newblock Springer-Verlag, Berlin, second revised edition, 2000.
+
+\bibitem[Hoe01]{Hoefkens01}
+J.~Hoefkens.
+\newblock {\em Rigorous numerical analysis with high order {T}aylor methods}.
+\newblock PhD thesis, Michigan State University, 2001.
+
+\bibitem[IS90]{IrvineS90}
+D.H. Irvine and M.A. Savageau.
+\newblock Efficient solution of nonlinear ordinary differential equations
+  expressed in {$S$}-system canonical form.
+\newblock {\em SIAM J. Numer. Anal.}, 27(3):704--735, 1990.
+
+\bibitem[JZ85]{JalbertZ85}
+F.~Jalbert and R.V.M. Zahar.
+\newblock A highly precise {T}aylor series method for stiff {O}{D}{E}s.
+\newblock In {\em Proceedings of the fourteenth Manitoba conference on
+  numerical mathematics and computing (Winnipeg, Man., 1984)}, volume~46, pages
+  347--358, 1985.
+
+\bibitem[KC92]{KirlingerC92}
+G.~Kirlinger and G.F. Corliss.
+\newblock On implicit {T}aylor series methods for stiff {O}{D}{E}s.
+\newblock In {\em Computer arithmetic and enclosure methods (Oldenburg, 1991)},
+  pages 371--379. North-Holland, Amsterdam, 1992.
+
+\bibitem[MH92]{MeyerH92}
+K.R. Meyer and G.R. Hall.
+\newblock {\em Introduction to Hamiltonian Dynamical Systems and the N-Body
+  Problem}.
+\newblock Springer, New York, 1992.
+
+\bibitem[Moo66]{Moore66}
+R.E. Moore.
+\newblock {\em Interval Analysis}.
+\newblock Prentice-Hall, Englewood Cliffs, N.J., 1966.
+
+\bibitem[MS99]{MartinezS99}
+R.~Mart{\'\i}nez and C.~Sim{\'o}.
+\newblock Simultaneous binary collisions in the planar four-body problem.
+\newblock {\em Nonlinearity}, 12(4):903--930, 1999.
+
+\bibitem[NJC99]{NedialkovJC99}
+N.S. Nedialkov, K.R. Jackson, and G.F. Corliss.
+\newblock Validated solutions of initial value problems for ordinary
+  differential equations.
+\newblock {\em Appl. Math. Comput.}, 105(1):21--68, 1999.
+
+\bibitem[Ral81]{Rall81}
+L.B. Rall.
+\newblock {\em Automatic Differentiation: {T}echniques and Applications},
+  volume 120 of {\em Lecture Notes in Computer Science}.
+\newblock Springer Verlag, Berlin, 1981.
+
+\bibitem[Sim]{Simo01}
+C.~Sim\'o.
+\newblock Dynamical properties of the figure eight solution of the three--body
+  problem.
+\newblock To appear in A. Chenciner, R. Cushman, C. Robinson and Z. Xia,
+  editors, {\em Proceedings of the Chicago Conference dedicated to Don Saari}.
+
+\bibitem[Sim01]{Simo01a}
+C.~Sim\'o.
+\newblock Global dynamics and fast indicators.
+\newblock In H.W. Broer, B.~Krauskopf, and G.~Vegter, editors, {\em Global
+  analysis of dynamical systems}, pages 373--389, Bristol, 2001. IOP
+  Publishing.
+
+\bibitem[Ste56]{Steffensen56}
+J.F. Steffensen.
+\newblock On the restricted problem of three bodies.
+\newblock {\em Danske Vid. Selsk. Mat.-Fys. Medd.}, 30(18):17, 1956.
+
+\bibitem[Ste57]{Steffensen57}
+J.F. Steffensen.
+\newblock On the problem of three bodies in the plane.
+\newblock {\em Mat.-Fys. Medd. Danske Vid. Selsk.}, 31(3):18, 1957.
+
+\bibitem[SV87]{SavageauV87}
+M.A. Savageau and E.O. Voit.
+\newblock Recasting nonlinear differential equations as {$S$}-systems: a
+  canonical nonlinear form.
+\newblock {\em Math. Biosci.}, 87(1):83--115, 1987.
+
+\bibitem[SV01]{SimoV01a}
+C.~Sim\'o and C.~Valls.
+\newblock A formal approximation of the splitting of separatrices in the
+  classical {A}rnold's example of diffusion with two equal parameters.
+\newblock {\em Nonlinearity}, 14(4):1707--1760, 2001.
+
+\bibitem[Sze67]{Szebehely67}
+V.~Szebehely.
+\newblock {\em Theory of Orbits}.
+\newblock Academic Press, 1967.
+
+\bibitem[Wen64]{Weng64}
+R.~E. Wengert.
+\newblock A simple automatic derivative evaluation program.
+\newblock {\em Comm. ACM}, 7(8):463--464, 1964.
+
+\end{thebibliography}

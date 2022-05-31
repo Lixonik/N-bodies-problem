@@ -1,0 +1,170 @@
+/*
+ *  Coefficient and freq vectors for the perturbation 
+ *  functions.
+ */
+extern MY_FLOAT  term0[20];                /* constant term in Fourier series' */
+extern MY_FLOAT  omega[10], phi[10];
+extern MY_FLOAT  sincoefs[20][201];        /* coefficients of sin terms */
+extern MY_FLOAT  coscoefs[20][201];        /* coefficients of cos terms */
+extern short     cosfreqs[20][201][5];     /* freq vectors */
+extern short     sinfreqs[20][201][5];     /* freq vectors */
+
+/*
+ * number of sine and cosine terms in perturbation functions.
+ * Unfortunately, the translator has to know exactly the number
+ * of terms present. Notice the 1 offset!
+ */
+
+ns0=199; nc0=199;
+ns1=199; nc1=199;
+ns2=199; nc2=199;
+ns3=52; nc3=61;
+ns4=79; nc4=81;
+ns5=101; nc5=98;
+ns6=185; nc6=199;
+ns7=199; nc7=199;
+ns8=199; nc8=199;
+ns9=199; nc9=199;
+ns10=62; nc10=59;
+ns11=101; nc11=98;
+ns12=79; nc12=81;
+ns13=25; nc13=23;
+ns14=64; nc14=65;
+ns15=52; nc15=61;
+ns16=69; nc16=67;
+ns17=154; nc17=159;
+ns18=25; nc18=23;
+ns19=79; nc19=81;
+
+/* here is the vector fields */
+mu=0.01217721397955041;
+xe=-0.50;
+ye=-0.86602540378443864;
+a=x1-xe;
+b=x1+xe;
+c=x2-ye;
+umm=1.0-mu;
+rpe=(a*a+c*c+x3*x3);
+rpe3=rpe^1.5;
+rpm=(b*b+c*c+x3*x3);
+rpm3=rpm^1.5;
+
+/* nested sum is not allowed. Here, the inner sum is fully expanded
+ * before processing. The translator has an option "-expand number"
+ * to expand sums with less than "number" of terms. The default
+ * "number" is 10. I.e, sums with no more than 10 terms are
+ * expanded.
+ */
+	
+p1=term0[0] + sum(coscoefs[0][j] * cos(t * sum(cosfreqs[0][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[0][j][k]*phi[k], k=0,4)), j=0,nc0)
+            + sum(sincoefs[0][j] * sin(t * sum(sinfreqs[0][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[0][j][k]*phi[k], k=0,4)), j=0,ns0);
+
+p2=term0[1] + sum(coscoefs[1][j] * cos(t * sum(cosfreqs[1][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[1][j][k]*phi[k], k=0,4)), j=0,nc1)
+            + sum(sincoefs[1][j] * sin(t * sum(sinfreqs[1][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[1][j][k]*phi[k], k=0,4)), j=0,ns1);
+
+p3=term0[2] + sum(coscoefs[2][j] * cos(t * sum(cosfreqs[2][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[2][j][k]*phi[k], k=0,4)), j=0,nc2)
+            + sum(sincoefs[2][j] * sin(t * sum(sinfreqs[2][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[2][j][k]*phi[k], k=0,4)), j=0,ns2);
+p4=term0[3] + sum(coscoefs[3][j] * cos(t * sum(cosfreqs[3][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[3][j][k]*phi[k], k=0,4)), j=0,nc3)
+            + sum(sincoefs[3][j] * sin(t * sum(sinfreqs[3][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[3][j][k]*phi[k], k=0,4)), j=0,ns3);
+p5=term0[4] + sum(coscoefs[4][j] * cos(t * sum(cosfreqs[4][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[4][j][k]*phi[k], k=0,4)), j=0,nc4)
+            + sum(sincoefs[4][j] * sin(t * sum(sinfreqs[4][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[4][j][k]*phi[k], k=0,4)), j=0,ns4);
+
+p6=term0[5] + sum(coscoefs[5][j] * cos(t * sum(cosfreqs[5][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[5][j][k]*phi[k], k=0,4)), j=0,nc5)
+            + sum(sincoefs[5][j] * sin(t * sum(sinfreqs[5][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[5][j][k]*phi[k], k=0,4)), j=0,ns5);
+p7=term0[6] + sum(coscoefs[6][j] * cos(t * sum(cosfreqs[6][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[6][j][k]*phi[k], k=0,4)), j=0,nc6)
+            + sum(sincoefs[6][j] * sin(t * sum(sinfreqs[6][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[6][j][k]*phi[k], k=0,4)), j=0,ns6);
+
+p8=term0[7] + sum(coscoefs[7][j] * cos(t * sum(cosfreqs[7][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[7][j][k]*phi[k], k=0,4)), j=0,nc7)
+            + sum(sincoefs[7][j] * sin(t * sum(sinfreqs[7][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[7][j][k]*phi[k], k=0,4)), j=0,ns7);
+
+p9=term0[8] + sum(coscoefs[8][j] * cos(t * sum(cosfreqs[8][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[8][j][k]*phi[k], k=0,4)), j=0,nc8)
+            + sum(sincoefs[8][j] * sin(t * sum(sinfreqs[8][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[8][j][k]*phi[k], k=0,4)), j=0,ns8);
+
+p10=term0[9] + sum(coscoefs[9][j] * cos(t * sum(cosfreqs[9][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[9][j][k]*phi[k], k=0,4)), j=0,nc9)
+            + sum(sincoefs[9][j] * sin(t * sum(sinfreqs[9][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[9][j][k]*phi[k], k=0,4)), j=0,ns9);
+
+p11=term0[10] + sum(coscoefs[10][j] * cos(t * sum(cosfreqs[10][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[10][j][k]*phi[k], k=0,4)), j=0,nc10)
+            + sum(sincoefs[10][j] * sin(t * sum(sinfreqs[10][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[10][j][k]*phi[k], k=0,4)), j=0,ns10);
+
+p12=term0[11] + sum(coscoefs[11][j] * cos(t * sum(cosfreqs[11][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[11][j][k]*phi[k], k=0,4)), j=0,nc11)
+            + sum(sincoefs[11][j] * sin(t * sum(sinfreqs[11][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[11][j][k]*phi[k], k=0,4)), j=0,ns11);
+
+p13=term0[12] + sum(coscoefs[12][j] * cos(t * sum(cosfreqs[12][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[12][j][k]*phi[k], k=0,4)), j=0,nc12)
+            + sum(sincoefs[12][j] * sin(t * sum(sinfreqs[12][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[12][j][k]*phi[k], k=0,4)), j=0,ns12);
+
+p14=term0[13] + sum(coscoefs[13][j] * cos(t * sum(cosfreqs[13][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[13][j][k]*phi[k], k=0,4)), j=0,nc13)
+            + sum(sincoefs[13][j] * sin(t * sum(sinfreqs[13][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[13][j][k]*phi[k], k=0,4)), j=0,ns13);
+
+p15=term0[14] + sum(coscoefs[14][j] * cos(t * sum(cosfreqs[14][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[14][j][k]*phi[k], k=0,4)), j=0,nc14)
+            + sum(sincoefs[14][j] * sin(t * sum(sinfreqs[14][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[14][j][k]*phi[k], k=0,4)), j=0,ns14);
+
+p16=term0[15] + sum(coscoefs[15][j] * cos(t * sum(cosfreqs[15][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[15][j][k]*phi[k], k=0,4)), j=0,nc15)
+            + sum(sincoefs[15][j] * sin(t * sum(sinfreqs[15][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[15][j][k]*phi[k], k=0,4)), j=0,ns15);
+
+p17=term0[16] + sum(coscoefs[16][j] * cos(t * sum(cosfreqs[16][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[16][j][k]*phi[k], k=0,4)), j=0,nc16)
+            + sum(sincoefs[16][j] * sin(t * sum(sinfreqs[16][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[16][j][k]*phi[k], k=0,4)), j=0,ns16);
+
+p18=term0[17] + sum(coscoefs[17][j] * cos(t * sum(cosfreqs[17][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[17][j][k]*phi[k], k=0,4)), j=0,nc17)
+            + sum(sincoefs[17][j] * sin(t * sum(sinfreqs[17][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[17][j][k]*phi[k], k=0,4)), j=0,ns17);
+
+p19=term0[18] + sum(coscoefs[18][j] * cos(t * sum(cosfreqs[18][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[18][j][k]*phi[k], k=0,4)), j=0,nc18)
+            + sum(sincoefs[18][j] * sin(t * sum(sinfreqs[18][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[18][j][k]*phi[k], k=0,4)), j=0,ns18);
+
+p20=term0[19] + sum(coscoefs[19][j] * cos(t * sum(cosfreqs[19][j][k]*omega[k], k=0,4) + 
+				           sum(cosfreqs[19][j][k]*phi[k], k=0,4)), j=0,nc19)
+            + sum(sincoefs[19][j] * sin(t * sum(sinfreqs[19][j][k]*omega[k], k=0,4) + 
+				           sum(sinfreqs[19][j][k]*phi[k], k=0,4)), j=0,ns19);
+
+diff(x1, t)=x4;
+diff(x2, t)=x5;
+diff(x3, t)=x6;
+
+diff(x4, t)= p7*(-a*umm/rpe3-b*mu/rpm3-xe*(1.0-2.0*mu))+p1+
+     p2*x1 + p3*x2 + p4*x3+ p5*x4 +p6*x5;
+
+diff(x5, t)= p7*(-c*umm/rpe3-c*mu/rpm3-ye)+p8+p9*x1+ p10*x2+
+          p11*x3+ p12*x4+ p13*x5 + p14*x6;
+
+diff(x6, t)= p7*x3*(-umm/rpe3-mu/rpm3)+p15+p16*x1+p17*x2+
+       p18*x3+p19*x5+p20*x6;
+
+
+

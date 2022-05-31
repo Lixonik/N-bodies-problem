@@ -1,0 +1,62 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<!--Converted with LaTeX2HTML 96.1 (Feb 5, 1996) by Nikos Drakos (nikos@cbl.leeds.ac.uk), CBLU, University of Leeds -->
+<HTML>
+<HEAD>
+<TITLE>On the ``automatically generated'' main program</TITLE>
+<META NAME="description" CONTENT="On the ``automatically generated'' main program">
+<META NAME="keywords" CONTENT="manual">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+<LINK REL=STYLESHEET HREF="manual.css">
+</HEAD>
+<BODY LANG="EN">
+ <A NAME="tex2html106" HREF="node9.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html104" HREF="node7.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html98" HREF="node7.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html107" HREF="node9.html">Using extended precision</A>
+<B>Up:</B> <A NAME="tex2html105" HREF="node7.html">Example 1</A>
+<B> Previous:</B> <A NAME="tex2html99" HREF="node7.html">Example 1</A>
+<BR> <P>
+<H3><A NAME="SECTION00043100000000000000">On the ``automatically generated'' main program</A></H3>
+<P>
+Since we did not specify the initial conditions in our last
+example, the main program asks us to input them at run time.
+Initial values, 
+error tolerance and stop conditions can be
+specified in the input file. <EM>We stress that this information
+is only used to produce the main() driving function.</EM>
+<P>
+The syntax for specifying initial values is:
+<PRE>  initial_values = expr, expr, ..., expr;</PRE>
+For example:
+<PRE>  initial_values = cos(0.1)*2, 0.4, exp(0.5);</PRE>
+<P>
+For time step, error tolerance and stop conditions,
+<B>taylor</B> uses a few reserverd variables (names).
+They are:
+<PRE>start_time = expr;               /* start time */
+stop_time = expr;                /* stop time: stop condition  */
+absolute_error_tolerance = expr; /* absolute error tolerance */
+relative_error_tolerance = expr; /* relative error tolerance */
+number_of_steps=expr;            /* stop condition */</PRE>
+Here the right hand expressions must reduce to 
+real constants. <code>stop_time</code> and <code>number_of_steps</code>
+provide two mechanisms to stop the integrator. The 
+solver will stop when either condition is met. 
+Please be advised that expressions here are evaluated
+in double precision first, and pass the result to
+the macro <code>MakeMyFloatC(var,string_form,double_value)</code>.
+<P>
+For example, we can add the following lines to 
+<code>lorenz.eq1</code>.
+<PRE>    initial_values= 0.1,  0.2, 0.3;
+    start_time= 0.0;
+    stop_time = 0.3;
+    absolute_error_tolerance = 0.1e-16;
+    relative_error_tolerance = 0.1e-16;</PRE>
+<P>
+<BR> <HR>
+<P><ADDRESS>
+<I>Maorong Zou <BR>
+Tue Nov 13 09:42:48 CST 2001</I>
+</ADDRESS>
+</BODY>
+</HTML>

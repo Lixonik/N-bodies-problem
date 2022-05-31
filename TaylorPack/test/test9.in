@@ -1,0 +1,19 @@
+/* 
+ * sample input
+ *
+ *  Usage:
+ *   taylor -main -o a.c  test1.in
+ *   cc -o test1 a.c -lm
+ */
+
+/* control parameters */
+initialValues = 0.02,0.03,0.0;    /* initial values */
+absoluteErrorTolerance = 1.0E-16;      /* error tolerance for step control */
+relativeErrorTolerance = 1.0E-16;      /* error tolerance for step control */
+stopTime = 100.0;                      /* stop time */
+startTime = 0.0;                       /* start time */
+
+/* ODE specification: */
+y1' = 0.2*(y2-y1);
+y2' = 10.0*y1 - (60 - 0.125*y3)*y2 + 0.125 *y3;
+y3'=1;

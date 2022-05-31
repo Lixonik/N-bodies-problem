@@ -1,0 +1,14 @@
+
+This dir contains some test examples
+using the GMP package.
+
+The precesion for floating point numbers
+is set at 256 bits. You may change it
+in the Makefile
+
+Note: some of the examples uses 
+      math function sin/cos/pow/...
+      which is not yet available in GMP.
+      These examples will fail.
+
+

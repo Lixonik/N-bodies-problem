@@ -1,0 +1,19 @@
+/* 
+ * sample input
+ *
+ *  Usage:
+ *   taylor -main -o a.c  test1.in
+ *   cc -o test1 a.c -lm
+ */
+
+/* control parameters */
+
+initialValues = 1.0;
+absoluteErrorTolerance = 1.0E-100;
+relativeErrorTolerance = 1.0E-100;
+stopTime = 2.0;
+startTime = 0.0;
+stepSize = 0.001;
+
+a = 0.5;
+x'=  a * x;

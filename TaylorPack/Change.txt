@@ -1,0 +1,23 @@
+Apr 22, 2008
+
+  * fixed a bug in boolean expression code, _jz_uvar1 was mis-spelled as  _jz_tvar1.
+    Thanks to Gemma Huguet
+
+
+Apr 18, 2008
+
+  * correct yet another error in the manual.
+
+Apr 17, 2008
+
+  * correct an error in the manual.
+
+
+Version 1.4.3 (Dec 5, 2007):
+
+* Added support for MPFR. This is a extended precision library based
+  on GMP, but with correct rounding. It includes functions like sin,
+  cos, exp, log, etc.
+* Added some fixes for the library QD.
+* Internal changes so that the time-stepper propagates a bit less of
+  roundoff error.

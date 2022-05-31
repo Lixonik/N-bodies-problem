@@ -1,0 +1,6 @@
+set xtics 0,250000,1000000
+plot '256/75.ham' u 1:2 t '1.e-75' w l, '256/76.ham' u 1:2 t '1.e-76' w l, '256/77.ham' u 1:2 t '1.e-77' w l, '256/78.ham' u 1:2 t '1.e-78' w l, '256/79.ham' u 1:2 t '1.e-79' w l, '256/80.ham' u 1:2 t '1.e-80' w l
+set term po eps 20
+set output 'drift-gmp256.eps'
+replot
+set term x11

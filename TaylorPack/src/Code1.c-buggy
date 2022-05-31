@@ -1,0 +1,2223 @@
+/*********************************************************************
+ *
+ *       Taylor  
+ *
+ *    Copyright (C) 1999  Maorong Zou, Angel Jorba
+ *
+ *
+ *  This file is part of taylor.
+ *
+ * Taylor is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * Taylor is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Taylor; see the file COPYING.  If not, write to
+ * the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
+ *
+ *************************************************************************/
+
+#define CODE1_C
+#include "Header.h"
+/*************************************************************************************************/
+static char *genCstFString(Node def);
+static char *genCstIString(Node def);
+static char *genLocalVarLvalue(Node var);
+static char *genGlobalVarLvalue(Node var);
+static char *genArrayRef(Node aref);
+static char *genNodeRvalueF(Node node);
+static char *genNodeRvalueI(Node node);
+static char *genNodeKthDerivative(Node var, char *kth);
+static char *genVarLvalueKth(Node var, char *kth);
+static void computeKthDeri(Node var, Node def);
+static void outputBoolExpr(int code, Node left, Node right, char *name1);
+/*************************************************************************************************/
+static int  icnt1=0, icnt2=0, jcnt3=0, jcnt4=0;
+/*************************************************************************************************
+ *
+ *  Output a INT or FLOAT constant
+ */
+static char *genCstFString(Node def)
+{
+  static char str[2048];
+  static char *outs[16]={ str, str+128, str+256, str+384, str+512, str+640, str+768, str+896,
+			  str+1024, str+1152, str+1280,str+1408,str+1536,str+1664,str+1792,str+1920};
+  static int  oidx = 0;
+  char   *out = outs[oidx];
+  out[0] = '\0';
+  oidx++; if(oidx==16) oidx = 0;
+  if(def) sprintf(out, "%s", NODE_INFO(def));
+  return(out);
+}
+
+/*************************************************************************************************
+ *
+ *  Output a INT or FLOAT as integer constant 
+ */
+static char *genCstIString(Node def)
+{
+  static char str[2048];
+  static char *outs[16]={ str, str+128, str+256, str+384, str+512, str+640, str+768, str+896,
+			  str+1024, str+1152, str+1280,str+1408,str+1536,str+1664,str+1792,str+1920};
+  static int  oidx = 0;
+  char   *out = outs[oidx];
+  out[0] = '\0';
+  oidx++; if(oidx==16) oidx = 0;
+
+  if(def)
+    {
+      int jnk;
+      if(nodeIsNumber(def)) sprintf(out, "%d", intNodeValue(def, &jnk));
+      else sprintf(out, "(int)(%s)", NODE_INFO(def));
+    }
+
+  return(out);
+}
+
+/*************************************************************************************************
+ * output a local var as a lvalue: 
+ * require loop counter's name to be 'm'
+ */
+static char *genLocalVarLvalue(Node var)
+{
+  static char str[2048];
+  static char *outs[16]={ str, str+128, str+256, str+384, str+512, str+640, str+768, str+896,
+			  str+1024, str+1152, str+1280,str+1408,str+1536,str+1664,str+1792,str+1920};
+  static int  oidx = 0;
+  char   *out = outs[oidx];
+  out[0] = '\0';
+  oidx++; if(oidx==16) oidx = 0;
+
+  if(var)
+    {
+      SumP sum = NODE_SUM_BLOCK(var);
+      Node idx = SUMB_IDX(sum);
+      int  vcount = SUMB_LVAR(sum);
+      int  ccount = SUMB_LCST(sum);
+      int  voffset = SUMB_VOFFSET(sum);
+      int  icount = SUMB_LINT(sum);
+      int  coffset = SUMB_COFFSET(sum);
+      int  ioffset = SUMB_IOFFSET(sum);
+
+      if(var == idx) return(NODE_NAME(idx));
+      else if(VAR_IS_LOCAL_VAR(var))
+        sprintf(out, "jet[m*%d+(%d+%d)][0]", vcount, voffset, ID_VOFFSET(var));
+      else if(VAR_IS_LOCAL_CVAR(var))
+        sprintf(out, "cvars[m*%d+(%d+%d)]", ccount, coffset, ID_COFFSET(var)); 
+      else if(VAR_IS_LOCAL_IVAR(var))
+        sprintf(out, "ivars[m*%d+(%d+%d)]", icount, ioffset, ID_IOFFSET(var)); 
+      else
+        {
+          fprintf(stderr, "Internal error: don't know how to assign LVALUE to lvar %s\n",
+                  NODE_GIVEN_NAME(var)?NODE_GIVEN_NAME(var): NODE_NAME(var));
+          exit(31);
+        }
+    }
+  return(out);
+}
+
+static char  *genVarLvalueKth(Node var, char *kth)
+{
+  static char str[2048];
+  static char *outs[16]={ str, str+128, str+256, str+384, str+512, str+640, str+768, str+896,
+			  str+1024, str+1152, str+1280,str+1408,str+1536,str+1664,str+1792,str+1920};
+  static int  oidx = 0;
+  char   *out = outs[oidx];
+  out[0] = '\0';
+  oidx++; if(oidx==16) oidx = 0;
+
+  if(var && VAR_IS_LOCAL(var))
+    {
+      SumP sum = NODE_SUM_BLOCK(var);
+      int  vcount = SUMB_LVAR(sum);
+      int  voffset = SUMB_VOFFSET(sum);
+      
+      if(VAR_IS_LOCAL_VAR(var))
+        sprintf(out, "jet[m*%d+(%d+%d)][%s]", vcount, voffset, ID_VOFFSET(var), kth);
+      else
+        {
+          fprintf(stderr, "Internal error: don't know how to assign the kth LVALUE  to lvar %s\n",
+                  NODE_GIVEN_NAME(var)? NODE_GIVEN_NAME(var):NODE_NAME(var));
+          exit(31);
+        }
+    }
+  else if(var && VAR_IS_GLOBAL(var))
+    {
+      if(VAR_IS_GLOBAL_VAR(var))
+        sprintf(out, "jet[%d][%s]", ID_VOFFSET(var) + ID_VINDEX(var), kth);
+      else
+        {
+          fprintf(stderr, "Internal error: don't know how to assign the kth LVALUE to gvar %s\n",
+                  NODE_GIVEN_NAME(var)?NODE_GIVEN_NAME(var):NODE_NAME(var));
+          exit(32);
+        }      
+    }
+  return(out);
+}
+/*************************************************************************************************
+ * output a global var as a lvalue.
+ */
+static char *genGlobalVarLvalue(Node var)
+{
+  static char str[2048];
+  static char *outs[16]={ str, str+128, str+256, str+384, str+512, str+640, str+768, str+896,
+			  str+1024, str+1152, str+1280,str+1408,str+1536,str+1664,str+1792,str+1920};
+  static int  oidx = 0;
+  char   *out = outs[oidx];
+  out[0] = '\0';
+  oidx++; if(oidx==16) oidx = 0;
+
+  if(var)
+    {
+      if(VAR_IS_GLOBAL_VAR(var))
+        sprintf(out, "jet[%d][0]", ID_VOFFSET(var) + ID_VINDEX(var));
+      else if(VAR_IS_GLOBAL_CVAR(var))
+        sprintf(out, "cvars[%d]", ID_COFFSET(var) + ID_CINDEX(var)); 
+      else if(VAR_IS_GLOBAL_IVAR(var))
+        sprintf(out, "ivars[%d]", ID_IOFFSET(var) + ID_IINDEX(var)); 
+      else
+        {
+          fprintf(stderr, "Internal error: don't know how to assign LVALUE to gvar %s\n",
+                  NODE_GIVEN_NAME(var)?NODE_GIVEN_NAME(var):NODE_NAME(var));
+          exit(32);
+        }
+    }
+  return(out);
+}
+
+/*************************************************************************************************
+ *
+ * output array reference
+ */
+static char  *genArrayRef(Node aref)
+{
+  static char str[2048];
+  static char *outs[16]={ str, str+128, str+256, str+384, str+512, str+640, str+768, str+896,
+			  str+1024, str+1152, str+1280,str+1408,str+1536,str+1664,str+1792,str+1920};
+  static int  oidx = 0;
+  char   *out = outs[oidx];
+  out[0] = '\0';
+  oidx++; if(oidx==16) oidx = 0;
+
+  if(aref)
+    {
+      char  istr[256], tmpstr[128], *iout;
+      Node aname = NODE_LEFT(aref);
+      Node idx = NODE_RIGHT(aref);
+
+      istr[0] = '\0';
+      while(idx)
+        {
+          Node thisIdx = NODE_LEFT(idx);
+          idx = NODE_RIGHT(idx);
+          iout = genNodeRvalueI(thisIdx);
+          sprintf(tmpstr, "[%s]", iout);
+          strcat(istr, tmpstr);
+        }
+      sprintf(out, "%s%s", NODE_NAME(aname), istr);
+    }
+  return(out);
+}
+
+
+/*************************************************************************************************
+ *
+ * output a node as rvalue (float).
+ */
+static char *genNodeRvalueF(Node node)
+{
+  static char str[2048];
+  static char *outs[16]={ str, str+128, str+256, str+384, str+512, str+640, str+768, str+896,
+			  str+1024, str+1152, str+1280,str+1408,str+1536,str+1664,str+1792,str+1920};
+  static int  oidx = 0;
+  char   *out = outs[oidx];
+  out[0] = '\0';
+  oidx++; if(oidx==16) oidx = 0;
+
+  if(node)
+    {
+      int code = NODE_CODE(node);
+      switch(code)
+        {
+        case ID_NODE:
+          if(VAR_IS_LOCAL(node))
+            {
+              Node var = node;
+              SumP sum = NODE_SUM_BLOCK(var);
+              Node idx = SUMB_IDX(sum);
+              int  vcount = SUMB_LVAR(sum);
+              int  ccount = SUMB_LCST(sum);
+              int  voffset = SUMB_VOFFSET(sum);
+              int  icount = SUMB_LINT(sum);
+              int  coffset = SUMB_COFFSET(sum);
+              int  ioffset = SUMB_IOFFSET(sum);
+
+              if(var == idx)
+                {
+                  if(cdouble) sprintf(out, "%s", NODE_NAME(idx));
+                  else {
+                    if(icnt1&1)sprintf(out, "MakeMyFloatB(tvar1,(double)%s)", NODE_NAME(idx));
+		    else sprintf(out, "MakeMyFloatB(uvar1,(double)%s)", NODE_NAME(idx));
+		    icnt1++;
+                  }
+                }
+              else
+                {
+                  if(VAR_IS_LOCAL_VAR(var))
+		    sprintf(out, "jet[m*%d+(%d+%d)][0]", vcount, voffset, ID_VOFFSET(var));
+                  else if(VAR_IS_LOCAL_CVAR(var))
+                    {
+                      if(cdouble && nodeIsNumber(var)) {
+			if(jcnt3&1) sprintf(out, "MakeMyFloatB(svar3,(double)(%.17f))", cstNodeValue(var));
+			else  sprintf(out, "MakeMyFloatB(wvar3,(double)(%.17f))", cstNodeValue(var));
+			jcnt3++;
+		      } else sprintf(out, "cvars[m*%d+(%d+%d)]", ccount, coffset, ID_COFFSET(var));
+                    }
+                  else if(VAR_IS_LOCAL_IVAR(var))
+                    {
+                      int done = 0;
+                      if(cdouble && nodeIsNumber(var))
+                        {
+                          int jnk=0, v = intNodeValue(var,&jnk);
+                          if( jnk == 0)
+                            {
+                              sprintf(out, "(%d)", v);
+                              done = 1;
+                            }
+                        }
+                      if(!done) {
+                        if(icnt1&1) 
+			  sprintf(out, "MakeMyFloatB(tvar1, (double)ivars[m*%d+(%d+%d)])", icount, ioffset, ID_IOFFSET(var)); 
+			else
+			  sprintf(out, "MakeMyFloatB(uvar1, (double)ivars[m*%d+(%d+%d)])", icount, ioffset, ID_IOFFSET(var)); 
+			icnt1++;
+		      }
+                    }
+                  else
+                    {
+                      fprintf(stderr, "Internal error: don't know how to assign LVALUE to lvar %s\n",
+                              NODE_GIVEN_NAME(var)? NODE_GIVEN_NAME(var): NODE_NAME(var));
+                      exit(31);
+                    }
+                }
+              return(out);
+            }
+          else if(VAR_IS_GLOBAL(node))
+            {
+              Node var = node;
+              
+              if(VAR_IS_GLOBAL_VAR(var))
+                sprintf(out, "jet[%d][0]", ID_VOFFSET(var) + ID_VINDEX(var));
+              else if(VAR_IS_GLOBAL_CVAR(var))
+                {
+                  if(cdouble && nodeIsNumber(var)) {
+                    if(jcnt4&1) sprintf(out, "MakeMyFloatB(svar4,(double)(%.17f))", cstNodeValue(var));
+		    else sprintf(out, "MakeMyFloatB(wvar4,(double)(%.17f))", cstNodeValue(var));
+		    jcnt4++;
+		  } else sprintf(out, "cvars[%d]", ID_COFFSET(var) + ID_CINDEX(var));
+                }
+              else if(VAR_IS_GLOBAL_IVAR(var))
+                {
+                  int done = 0;
+                  if(cdouble && nodeIsNumber(var))
+                    {
+                      int jnk=0, v = intNodeValue(var,&jnk);
+                      if( jnk == 0)
+                        {
+                          sprintf(out, "(%d)", v);
+                          done = 1;
+                        }
+                    }
+                  if(!done) {
+                    if(icnt1&1)sprintf(out, "MakeMyFloatB(tvar1,(double)ivars[%d])", ID_IOFFSET(var) + ID_IINDEX(var)); 
+		    else sprintf(out, "MakeMyFloatB(uvar1,(double)ivars[%d])", ID_IOFFSET(var) + ID_IINDEX(var)); 
+		    icnt1++;
+		  }
+                }
+              else
+                {
+                  fprintf(stderr, "Internal error: don't know how to assign LVALUE to gvar %s\n",
+                          NODE_GIVEN_NAME(var)?NODE_GIVEN_NAME(var):NODE_NAME(var));
+                  exit(32);
+                }
+              return(out);
+            }
+          else if(NODE_IS_INDEX(node)) 
+	    {
+	      if(icnt1&1)sprintf(out,"(MakeMyFloatB(tvar1, (double)%s))", NODE_NAME(node));
+	      else sprintf(out,"(MakeMyFloatB(uvar1, (double)%s))", NODE_NAME(node));
+	      icnt1++;
+	      return(out);
+	    }
+	  else if(ID_IS_EXTERN(node)) 
+	    {
+	      if(ID_IS_INT(node))
+		{
+		  if(icnt1&1)sprintf(out, "(MakeMyFloatB(tvar1, (double)%s),tvar1)", NODE_NAME(node));
+		  else sprintf(out, "(MakeMyFloatB(uvar1, (double)%s),tvar1)", NODE_NAME(node));
+		  icnt1++;
+		  return(out);
+		}
+	      else return(NODE_NAME(node));
+	    }
+	  else 
+            {
+              fprintf(stderr, "Internal Error: var '%s' is neither local nor global.\n", 
+                      NODE_GIVEN_NAME(node)? NODE_GIVEN_NAME(node): NODE_NAME(node));
+              exit(41);
+            }
+          break;
+        case INT_CST:
+        case FLOAT_CST:
+          return(genCstFString(node));
+          break;
+        case ARRAY_REF:
+          return(genArrayRef(node));
+          break;
+        default:
+          fprintf(stderr, "Internal Error: Illegal node in 'genRvalue'. Code=%d (%s)\n", code,
+                  NODE_GIVEN_NAME(node)? NODE_GIVEN_NAME(node): NODE_NAME(node));
+          exit(42);
+          break;
+        }
+    }
+  return(NULL);
+}
+
+static char *genNodeRvalueI(Node node)
+{
+  if(node)
+    {
+      int code = NODE_CODE(node);
+
+      if(cdouble && nodeIsNumber(node)) return(genCstIString(node));
+        
+      switch(code)
+        {
+        case ID_NODE:
+          if(VAR_IS_LOCAL(node)) return(genLocalVarLvalue(node));
+          else if(VAR_IS_GLOBAL(node)) return(genGlobalVarLvalue(node));
+          else if(NODE_IS_INDEX(node)) return(NODE_NAME(node));
+	  else if(ID_IS_EXTERN(node))  return(NODE_NAME(node));
+          else 
+            {
+              fprintf(stderr, "Internal Error: var '%s' is neither local nor global.\n", 
+                      NODE_GIVEN_NAME(node)?NODE_GIVEN_NAME(node): NODE_NAME(node));
+              exit(41);
+            }
+          break;
+        case INT_CST:
+        case FLOAT_CST:
+          return(genCstIString(node));
+          break;
+        case ARRAY_REF:
+          return(genArrayRef(node));
+          break;
+        default:
+          fprintf(stderr, "Internal Error: Illegal node in 'genRvalue'. Code=%d (%s)\n", code, 
+                  NODE_GIVEN_NAME(node)? NODE_GIVEN_NAME(node):NODE_NAME(node));
+          exit(42);
+          break;
+        }
+    }
+  return(NULL);
+}
+/****************************************************************************************************
+ *
+ *  output     name = left BOP right
+ */
+static void outputBoolExpr(int code, Node left, Node right, char *name1)
+{
+  int i1=0, i2=0; 
+  char *lstr, *rstr;
+  
+  i1 = (VAR_IS_LOCAL_IVAR(left)  || VAR_IS_GLOBAL_IVAR(left));
+  i2 = (VAR_IS_LOCAL_IVAR(right) || VAR_IS_GLOBAL_IVAR(right));
+
+  fprintf(outfile,"\t\t {\n\t\t\t static MY_FLOAT tmpa, tmpb;\n");
+
+  fprintf(outfile, "\t\t\t if(initialized == 0) ");
+  fprintf(outfile," { InitMyFloat(tmpa); InitMyFloat(tmpb); }\n");
+  if(i1 && i2)
+    {
+      lstr = genNodeRvalueI(left);
+      rstr = genNodeRvalueI(right);
+    }
+  else
+    {
+      if(i1)
+        {
+          lstr = genNodeRvalueI(left);
+          fprintf(outfile, "\t\t\t MakeMyFloatA(tmpa, (double)%s);\n", lstr);
+          lstr = "tmpa";
+        }
+      else
+        {
+          lstr = genNodeRvalueF(left);
+        }
+      if(i2)
+        {
+          rstr = genNodeRvalueI(right);
+          fprintf(outfile, "\t\t\t MakeMyFloatA(tmpb, (double)%s);\n", rstr);
+          rstr = "tmpb";
+        }
+      else
+        {
+          rstr = genNodeRvalueF(right);
+        }
+    }
+
+  if(i1 && i2)
+    {
+      switch(code)
+        {
+        case GE_EXPR:
+          fprintf(outfile, "\t\t\t %s= (%s >= %s);\n", name1, lstr, rstr);
+          break;
+        case GT_EXPR:
+          fprintf(outfile, "\t\t\t %s= (%s > %s);\n", name1, lstr, rstr);
+          break;
+        case LE_EXPR:
+          fprintf(outfile, "\t\t\t %s= (%s <= %s);\n", name1, lstr, rstr);
+          break;
+        case LT_EXPR:
+          fprintf(outfile, "\t\t\t %s= (%s < %s);\n", name1, lstr, rstr);
+          break;
+        case EQ_EXPR:
+          fprintf(outfile, "\t\t\t %s= (%s == %s);\n", name1, lstr, rstr);
+          break;
+        case NEQ_EXPR:
+          fprintf(outfile, "\t\t\t %s= (%s != %s);\n", name1, lstr, rstr);
+          break;
+        case AND_EXPR:
+          fprintf(outfile, "\t\t\t %s= (%s && %s);\n", name1, lstr, rstr);
+          break;
+        case OR_EXPR:      
+          fprintf(outfile, "\t\t\t %s= (%s || %s);\n", name1, lstr, rstr);
+          break;
+        }
+    }
+  else
+    {
+      switch(code)
+        {
+        case GE_EXPR:
+          fprintf(outfile, "\t\t\t %s= MyFloatA_GE_B(%s, %s);\n", name1, lstr, rstr);
+          break;
+        case GT_EXPR:
+          fprintf(outfile, "\t\t\t %s= MyFloatA_GT_B(%s, %s);\n", name1, lstr, rstr);
+          break;
+        case LE_EXPR:
+          fprintf(outfile, "\t\t\t %s= MyFloatA_LE_B(%s, %s);\n", name1, lstr, rstr);
+          break;
+        case LT_EXPR:
+          fprintf(outfile, "\t\t\t %s= MyFloatA_LT_B(%s, %s);\n", name1, lstr, rstr);
+          break;
+        case EQ_EXPR:
+          fprintf(outfile, "\t\t\t %s= MyFloatA_EQ_B(%s, %s);\n", name1, lstr, rstr);
+          break;
+        case NEQ_EXPR:
+          fprintf(outfile, "\t\t\t %s= MyFloatA_NEQ_B(%s, %s);\n", name1, lstr, rstr);
+          break;
+        case AND_EXPR:
+          fprintf(stderr, "Error: Boolean AND_EXPR has non-integer operands\n");
+          break;
+        case OR_EXPR:      
+          fprintf(stderr, "Error: Boolean OR_EXPR has non-integer operands\n");
+          break;
+        }
+    }
+  fprintf(outfile,"\t\t }\n");
+}
+/****************************************************************************************************
+ *
+ *  initialize variables in a sum block.
+ */
+
+void outputSumInitialVars(SumP sum)
+{
+  Node idx  = SUMB_IDX(sum);
+  Node *all  = SUMB_ALL_VARS(sum);
+  int  from = SUMB_FROM(sum);
+  int  to   = SUMB_TO(sum);
+  int  vcount = SUMB_LVAR(sum);
+  int  ccount = SUMB_LCST(sum);
+  int  icount = SUMB_LINT(sum);
+  int  total = vcount + ccount + icount;
+  int  k;
+  
+  fprintf(outfile, "\n\t /*begin sum block*/\n");
+  fprintf(outfile, "\t {\n\t    register int %s;\n", NODE_NAME(idx));
+  fprintf(outfile, "\t    for(%s = %d, m = 0; %s <= %d; %s += 1, m++) {\n", 
+	  NODE_NAME(idx), from, NODE_NAME(idx), to, NODE_NAME(idx));
+  for(k=0; k < total; k++)
+    {
+      Node var = all[k];
+      char *name1, *name2, *leftStr, *rightStr;
+      Node numer=NULL, deno=NULL;
+      Node def = variables[ID_V_INDEX(var)].def;
+      int  ratexp=0, code = NODE_CODE(def);
+
+      if(VAR_IS_GLOBAL(var))
+        {
+          fprintf(stderr, "Internal error: Global var %s is also marked as a local var.\n", 
+                  NODE_GIVEN_NAME(var)? NODE_GIVEN_NAME(var): NODE_NAME(var));
+          exit(21);
+        }
+      if(VAR_IS_LOCAL_VAR(var) || VAR_IS_LOCAL_CVAR(var))
+        {
+          name1 = genLocalVarLvalue(var);
+          switch(code)
+            {
+            case ID_NODE:
+	      fprintf(outfile, "\t\t /* id: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	      name2 = genGlobalVarLvalue(def);
+              fprintf(outfile, "\t\t AssignMyFloat(%s, %s);\n",name1,name2);
+              break;
+            case INT_CST:
+            case FLOAT_CST:
+	      fprintf(outfile, "\t\t /* constant: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              fprintf(outfile, "\t\t MakeMyFloatC(%s,\"%s\", %s);\n", name1, genCstFString(def), genCstFString(def));
+              break;  
+            case ARRAY_REF: 
+	      fprintf(outfile, "\t\t /* array_ref: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              fprintf(outfile, "\t\t AssignMyFloat(%s,%s);\n", name1, genArrayRef(def));
+              break;
+            case PLUS_EXPR:
+	      fprintf(outfile, "\t\t /* plus: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              leftStr = genNodeRvalueF(NODE_LEFT(def));
+              rightStr = genNodeRvalueF(NODE_RIGHT(def));
+              fprintf(outfile, "\t\t AddMyFloatA(%s, %s, %s);\n", 
+                      name1, leftStr, rightStr);
+              break;
+            case MINUS_EXPR:
+	      fprintf(outfile, "\t\t /* minus: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              leftStr = genNodeRvalueF(NODE_LEFT(def));
+              rightStr = genNodeRvalueF(NODE_RIGHT(def));
+              fprintf(outfile, "\t\t SubstractMyFloatA(%s, %s, %s);\n", 
+                      name1, leftStr, rightStr);
+              break;
+            case MULT_EXPR:
+	      fprintf(outfile, "\t\t /* mult: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              leftStr = genNodeRvalueF(NODE_LEFT(def));
+              rightStr = genNodeRvalueF(NODE_RIGHT(def));
+              fprintf(outfile, "\t\t MultiplyMyFloatA(%s, %s, %s);\n", 
+                      name1, leftStr, rightStr);
+              break;
+            case DIV_EXPR:
+	      fprintf(outfile, "\t\t /* div: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              leftStr = genNodeRvalueF(NODE_LEFT(def));
+              rightStr = genNodeRvalueF(NODE_RIGHT(def));
+              fprintf(outfile, "\t\t DivideMyFloatA(%s, %s, %s);\n", 
+                      name1, leftStr, rightStr);
+              break;
+            case EXP_EXPR:           
+	      fprintf(outfile, "\t\t /* exponentiation: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              leftStr = genNodeRvalueF(NODE_LEFT(def));
+              ratexp = isRational(NODE_RIGHT(def), &numer, &deno);
+	      if(ratexp && (ratexp == 8 || ratexp == -8)) { if(use_rational_exponent) { ratexp=(ratexp==8? 1 : -1);}}
+              if(ratexp == 1 || ratexp == -1)
+                {
+                  int spp=1, jk, pp = intNodeValue(numer, &jk);
+                  int qq = intNodeValue(deno, &jk);
+                  double expo;
+                  if(ratexp < 0) qq = -qq;
+                  if(abs(qq) <= 2) {
+                    /* integer or half integer exponent */
+                    fprintf(outfile, "\t\t  /* integer or half integer exponent */\n");
+                    pp = pp * qq; 
+                    if(pp < 0) { spp = -1; pp=-pp;}
+                    if(abs(qq) == 2) { 
+                      pp /= 2;
+                      if(spp == -1) {
+                        fprintf(outfile, "\t\t sqrtMyFloatA(svar1,%s);\n", leftStr);                      
+                        fprintf(outfile, "\t\t DivideMyFloatA(svar5, oneOverN[0], svar1);\n");                      
+                      } else
+                        fprintf(outfile, "\t\t sqrtMyFloatA(svar5,%s);\n", leftStr);                      
+                    } else {
+                      if(spp == -1) {
+                        fprintf(outfile, "\t\t AssignMyFloat(svar1,%s);\n", leftStr); 
+                        fprintf(outfile, "\t\t DivideMyFloatA(svar5, oneOverN[0], svar1);\n");                      
+                      }
+                      else 
+                        fprintf(outfile, "\t\t AssignMyFloat(svar5,%s);\n", leftStr); 
+                    }
+                    fprintf(outfile, "\t\t { int n=%d, m, mn=0; \n", pp);
+                    fprintf(outfile, "\t\t   switch(n) {\n");
+                    fprintf(outfile, "\t\t\t  case 0: AssignMyFloat(%s, oneOverN[0]); break;\n", name1);
+                    fprintf(outfile, "\t\t\t  case 1: AssignMyFloat(%s, svar5); break;\n", name1);
+                    fprintf(outfile, "\t\t\t  case 2: AssignMyFloat(svar1, svar5); MultiplyMyFloatA(%s,svar1,svaar5); break;\n",
+                            name1);
+                    fprintf(outfile, "\t\t\t  case 3: AssignMyFloat(svar1, svar5); MultiplyMyFloatA(svar2,svar1,svar5);\n");
+                    fprintf(outfile, "\t\t\t          MultiplyMyFloatA(%s,svar1,svar2); break;\n", name1);
+                    fprintf(outfile, "\t\t\t  default:\n");
+                    fprintf(outfile, "\t\t\t   AssignMyFloat(svar1, oneOverN[0]); AssignMyFloat(svar2, svar5);\n");
+                    fprintf(outfile, "\t\t\t     while(mn==0) {\n");
+                    fprintf(outfile, "\t\t\t        m=n; n /=2; if(n+n != m) {\n");
+                    fprintf(outfile, "\t\t\t           AssignMyFloat(svar3, svar1); MultiplyMyFloatA(svar1, svar3, svar2);\n");
+                    fprintf(outfile, "\t\t\t           if(n==0){ mn=1; ");
+                    fprintf(outfile, "    AssignMyFloat(%s,svar1);}\n",name1);
+                    fprintf(outfile, "\t\t\t         }\n");
+                    fprintf(outfile, "\t\t\t        if(mn==0) {AssignMyFloat(svar3, svar2);AssignMyFloat(svar4, svar2);\n");
+                    fprintf(outfile, "\t\t\t                   MultiplyMyFloatA(svar2, svar3,svar4);}\n");
+                    fprintf(outfile, "\t\t\t       }\n");
+                    fprintf(outfile, "\t\t\t   break; \n");
+                    fprintf(outfile, "\t\t\t  }\n\t\t } \n");
+                  } else { /* fishy here */
+                    expo = (double)(pp)/(double)qq;
+                    fprintf(outfile, "\t\t if(MyFloatA_GT_B(%s,MyFloatZERO)) { \n", leftStr);
+		    if(icnt2&1)
+		      fprintf(outfile, "\t\t    ExponentiateMyFloatA(%s, %s, MakeMyFloatB(tvar2,%.15f));\n", name1, leftStr, expo);
+		    else
+		      fprintf(outfile, "\t\t    ExponentiateMyFloatA(%s, %s, MakeMyFloatB(uvar2,%.15f));\n", name1, leftStr, expo);
+		    icnt2++;
+                    fprintf(outfile, "\t\t } else if(MyFloatA_LT_B(%s,MyFloatZERO)) {\n", leftStr);
+                    if( qq & 1) { /* odd root, ok */
+                      if(pp & 1) { /* pp is odd */
+                        fprintf(outfile, "\t\t    NegateMyFloatA(svar1, %s);\n", leftStr);
+                        if(icnt2&1) fprintf(outfile, "\t\t    ExponentiateMyFloatA(svar2, svar1, MakeMyFloatB(tvar2,%.15f));\n", expo);
+			else fprintf(outfile, "\t\t    ExponentiateMyFloatA(svar2, svar1, MakeMyFloatB(uvar2,%.15f));\n", expo);
+			icnt2++;
+                        fprintf(outfile, "\t\t    NegateMyFloatA(%s,svar2);\n", name1);
+                      } else { /* pp is even */
+                        fprintf(outfile, "\t\t    NegateMyFloatA(svar1, %s);\n", leftStr);
+                        if(icnt2&1)fprintf(outfile, "\t\t    ExponentiateMyFloatA(%s, svar1, MakeMyFloatB(tvar2,%.15f));\n", name1, expo);
+			else fprintf(outfile, "\t\t    ExponentiateMyFloatA(%s, svar1, MakeMyFloatB(uvar2,%.15f));\n", name1, expo);
+			icnt2++;
+                      }
+                    } else { /* qq is even: ?^(pp/qq) is undefiled */
+                      fprintf(outfile, "\t\t     fprintf(stderr, \"Attemp to compute negative^(%d/%d)\");exit(0);\n",pp,qq);
+                    }
+                    fprintf(outfile, "\t\t } else {\n");                    
+                    if(expo > 0.0) { fprintf(outfile, "\t\t    AssignMyFloat(%s,oneOverN[0]);\n\t\t }\n", name1);}
+                    else { fprintf(outfile, "\t\t   fprintf(stderr,\"Attemp to compute 0^(%d/%d)\");exit(0);\n\t\t}\n",pp,qq);}
+                  }
+                }
+              else
+                {
+                  rightStr = genNodeRvalueF(NODE_RIGHT(def));
+                  fprintf(outfile, "\t\t ExponentiateMyFloatA(%s, %s, %s);\n", 
+                          name1, leftStr, rightStr);
+                }
+              break;              
+            case NEGATE_EXPR:
+	      fprintf(outfile, "\t\t /* negate: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              leftStr = genNodeRvalueF(NODE_LEFT(def));
+              fprintf(outfile, "\t\t NegateMyFloatA(%s, %s);\n", 
+                      name1, leftStr);
+              break;                            
+            case CALL_EXPR:
+	      fprintf(outfile, "\t\t /* call: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              leftStr = NODE_NAME(NODE_LEFT(def));
+              rightStr = genNodeRvalueF(NODE_RIGHT(def));
+              fprintf(outfile, "\t\t %sMyFloatA(%s, %s);\n", 
+                      leftStr, name1, rightStr);
+              break;                            
+            case IF_ELSE_EXPR:
+	      fprintf(outfile, "\t\t /* if_else: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              {
+                char *condstr = genNodeRvalueI(IF_ELSE_COND(def));
+                leftStr = genNodeRvalueF(NODE_LEFT(def));
+                rightStr = genNodeRvalueF(NODE_RIGHT(def));
+                fprintf(outfile, "\t\t if(%s) \n\t\t\t { AssignMyFloat(%s,%s);} \n\t\t else \n\t\t\t{ AssignMyFloat(%s, %s);}\n",
+			condstr, name1, leftStr, name1, rightStr);
+              }              
+              break;
+            case GE_EXPR:
+            case GT_EXPR:
+            case LE_EXPR:
+            case LT_EXPR:
+            case EQ_EXPR:
+            case NEQ_EXPR:
+            case AND_EXPR:
+            case OR_EXPR:
+              {
+                fprintf(stderr, "Internal Error: bool expr appeared in wrong place\n");
+                exit(42);
+              }
+              break;
+            }
+        }
+      else if(VAR_IS_LOCAL_IVAR(var))
+        {
+
+          name1 = genLocalVarLvalue(var);
+          switch(code)
+            {
+            case INT_CST:
+            case FLOAT_CST:
+	      fprintf(outfile, "\t\t /* constant: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              fprintf(outfile, "\t\t %s=%s;\n", name1, genCstIString(def));
+              break;  
+            case ID_NODE:
+	      fprintf(outfile, "\t\t /* mult: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              name2 = genGlobalVarLvalue(var);
+              fprintf(outfile, "\t\t %s=(int)%s;\n",name1,name2);
+              break;
+            case ARRAY_REF: 
+	      fprintf(outfile, "\t\t /* array_ref: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              fprintf(outfile, "\t\t %s=(int)%s;\n", name1, genArrayRef(def));
+              break;
+            case PLUS_EXPR:
+	      fprintf(outfile, "\t\t /* plus: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              leftStr = genNodeRvalueI(NODE_LEFT(def));
+              rightStr = genNodeRvalueI(NODE_RIGHT(def));
+              fprintf(outfile, "\t\t %s=%s+%s;\n",name1, leftStr, rightStr);
+              break;
+            case MINUS_EXPR:
+	      fprintf(outfile, "\t\t /* minus: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              leftStr = genNodeRvalueI(NODE_LEFT(def));
+              rightStr = genNodeRvalueI(NODE_RIGHT(def));
+              fprintf(outfile, "\t\t %s=%s-%s;\n",name1, leftStr, rightStr);
+              break;
+            case MULT_EXPR:
+	      fprintf(outfile, "\t\t /* mult: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              leftStr = genNodeRvalueI(NODE_LEFT(def));
+              rightStr = genNodeRvalueI(NODE_RIGHT(def));
+              fprintf(outfile, "\t\t %s=%s*%s;\n",name1, leftStr, rightStr);
+              break;
+            case DIV_EXPR:
+	      fprintf(outfile, "\t\t /* div: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              leftStr = genNodeRvalueI(NODE_LEFT(def));
+              rightStr = genNodeRvalueI(NODE_RIGHT(def));
+              fprintf(outfile, "\t\t %s=%s/%s;\n",name1, leftStr, rightStr);
+              break;
+            case EXP_EXPR:           
+	      fprintf(outfile, "\t\t /* exponentiation: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              leftStr = genNodeRvalueI(NODE_LEFT(def));
+              ratexp = isRational(NODE_RIGHT(def), &numer, &deno);
+	      if(ratexp && (ratexp == 8 || ratexp == -8)) { if(use_rational_exponent) { ratexp=(ratexp==8? 1 : -1);}}
+              if(ratexp == 1 || ratexp == -1)
+                {
+                  int spp=1, jk, pp = intNodeValue(numer, &jk);
+                  int qq = intNodeValue(deno, &jk);
+                  double expo;
+                  if(ratexp < 0) qq = -qq;
+                  if(abs(qq) <= 2) {
+                    fprintf(outfile, "\t\t /* integer or half integer exponent */;\n");
+                    pp = pp * qq;
+                    if(pp < 0) {spp = -1; pp=-pp;}
+                    if(abs(qq) == 2) {  pp /=2;}
+                    fprintf(outfile, "\t\t { double base, dtmp,dsmp; int m,n=%d, mn=0;\n",pp);
+                    fprintf(outfile, "\t\t MyFloatToDouble(base,%s);\n",leftStr);
+                    if(abs(qq) == 2) { fprintf(outfile, "\t\t base =sqrt(base);\n"); }
+                    if(spp == -1) fprintf(outfile, "\t\t base =(double)1.0/base;\n");                      
+                    fprintf(outfile, "\t\t switch(n) { case 0: %s=1.0; break; case 1: %s=base; break;\n", name1,name1);
+                    fprintf(outfile, "\t\t             case 2: %s=base*base; break; case 3: dtmp=base*base;%s=dtmp*base; break;\n",
+                            name1,name1);                    
+                    fprintf(outfile, "\t\t             default: dtmp=1.0; dsmp=base;\n");
+                    fprintf(outfile, "\t\t              while(mn==0){m=n;n/=2;if(n+n!=m){dtmp*=dsmp;if(n==0){mn=1;%s=dtmp;}}\n",name1);
+                    fprintf(outfile, "\t\t                     if(mn==0){smp=smp*smp;}\n\t\t\t  }\n\t\t  }\n\t\t}\n");   
+                  } else {
+                    expo = (double)(pp)/(double)qq;
+                    fprintf(outfile, "\t\t { double base;\n");
+                    fprintf(outfile, "\t\t MyFloatToDouble(base,%s);\n",leftStr);
+                    fprintf(outfile, "\t\t %s = (int)pow(base, (%.15f));\n", 
+                            name1, expo);
+                    fprintf(outfile, "\t\t }\n");
+                  }
+                }
+              else
+                {
+                  rightStr = genNodeRvalueI(NODE_RIGHT(def));
+                  fprintf(outfile, "\t\t %s=(int)(pow((double)%s, (double)%s));\n",name1, leftStr, rightStr);
+                }
+              break;              
+            case NEGATE_EXPR:
+	      fprintf(outfile, "\t\t /* negate: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              leftStr = genNodeRvalueI(NODE_LEFT(def));
+              fprintf(outfile, "\t\t %s=-%s;\n", name1, leftStr);
+              break;                            
+            case CALL_EXPR:
+	      fprintf(outfile, "\t\t /* call: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              leftStr = NODE_NAME(NODE_LEFT(def));
+              rightStr = genNodeRvalueF(NODE_RIGHT(def));
+              fprintf(outfile, "\t\t %sMyFloatA(zvar1,%s);\n", leftStr, rightStr);
+              fprintf(outfile, "\t\t MyFloatToInt(%s, zvar1);\n",name1);
+              break;                            
+            case IF_ELSE_EXPR:
+	      fprintf(outfile, "\t\t /* if_else: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              {
+                char *condstr = genNodeRvalueI(IF_ELSE_COND(def));
+                leftStr = genNodeRvalueI(NODE_LEFT(def));
+                rightStr = genNodeRvalueI(NODE_RIGHT(def));
+                fprintf(outfile, "\t\t %s=(%s)?(%s):(%s);\n", name1, condstr, leftStr, rightStr);
+              }              
+              break;
+            case GE_EXPR:
+	      fprintf(outfile, "\t\t /* GE: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));              
+              outputBoolExpr(code, NODE_LEFT(def), NODE_RIGHT(def), name1);
+              break;
+            case GT_EXPR:
+	      fprintf(outfile, "\t\t /* GT: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              outputBoolExpr(code, NODE_LEFT(def), NODE_RIGHT(def), name1);
+              break;
+            case LE_EXPR:
+	      fprintf(outfile, "\t\t /* LE: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              outputBoolExpr(code, NODE_LEFT(def), NODE_RIGHT(def), name1);
+              break;
+            case LT_EXPR:
+	      fprintf(outfile, "\t\t /* LT: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              outputBoolExpr(code, NODE_LEFT(def), NODE_RIGHT(def), name1);
+              break;
+            case EQ_EXPR:
+	      fprintf(outfile, "\t\t /* EQ: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              outputBoolExpr(code, NODE_LEFT(def), NODE_RIGHT(def), name1);
+              break;
+            case NEQ_EXPR:
+	      fprintf(outfile, "\t\t /* NEQ: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              outputBoolExpr(code, NODE_LEFT(def), NODE_RIGHT(def), name1);
+              break;
+            case AND_EXPR:
+	      fprintf(outfile, "\t\t /* AND: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              outputBoolExpr(code, NODE_LEFT(def), NODE_RIGHT(def), name1);
+              break;
+            case OR_EXPR:
+	      fprintf(outfile, "\t\t /* OR: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+              outputBoolExpr(code, NODE_LEFT(def), NODE_RIGHT(def), name1);
+              break;
+	    }
+	}
+    }
+  fprintf(outfile, "\t   }\n\t } /*end sum block */\n");
+}
+/* compute the sum */
+void sumUptoVar(SumP sum, Node var)
+{
+  Node expr = SUMB_EXPR(sum);
+  int  from = SUMB_FROM(sum);
+  int  to   = SUMB_TO(sum);
+  int  ss = to-from+1;
+
+  char *vname = genGlobalVarLvalue(var);
+  char *lname = genLocalVarLvalue(expr);
+  fprintf(outfile, "\t {/*add up sum block*/\n");
+  fprintf(outfile, "\t    static MY_FLOAT tmpFloat, tmpA;\n");
+  fprintf(outfile, "\t    if(initialized==0) { InitMyFloat(tmpA); InitMyFloat(tmpFloat);}\n");
+  fprintf(outfile, "\t    AssignMyFloat(tmpFloat, MyFloatZERO);\n");
+  fprintf(outfile, "\t    for(m = 0; m < %d; m++) {\n", ss);
+  fprintf(outfile, "\t\t AddMyFloatA(tmpA, tmpFloat, %s);\n", lname);
+  fprintf(outfile, "\t\t AssignMyFloat(tmpFloat, tmpA);\n");
+  fprintf(outfile, "\t    }\n"); 
+  fprintf(outfile, "\t    AssignMyFloat(%s, tmpFloat);\n", vname);
+  fprintf(outfile, "\t }/*end add up sum block*/\n\n");
+}
+
+/*************************************************************************************************
+ *
+ *  Output initial values for all vars except SUM_EXPR
+ */
+void  outputInitialVar(Node var)
+{
+  Node def = variables[ID_V_INDEX(var)].def;
+  int  code = NODE_CODE(def);
+  char *name2, *name1 = genGlobalVarLvalue(var);
+  char *leftStr, *rightStr;
+  Node numer = NULL, deno = NULL;
+  int ratexp = 0;
+
+  if(VAR_IS_GLOBAL_VAR(var) || VAR_IS_GLOBAL_CVAR(var))
+    {
+      switch(code)
+	{
+	case ID_NODE:
+	  fprintf(outfile, "\t /* id: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  name2 = genGlobalVarLvalue(def);
+	  fprintf(outfile, "\t AssignMyFloat(%s, %s);\n",name1,name2);
+	  break;
+	case INT_CST:
+	case FLOAT_CST:
+	  fprintf(outfile, "\t /* const: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  fprintf(outfile, "\t MakeMyFloatC(%s,\"%s\",(double)%s);\n", name1, genCstFString(def), genCstFString(def));
+	  break;        
+	case ARRAY_REF: 
+	  fprintf(outfile, "\t /* array_ref: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  fprintf(outfile, "\t AssignMyFloat(%s,%s);\n", name1, genArrayRef(def));
+	  break;
+	case PLUS_EXPR:
+	  fprintf(outfile, "\t /* plus: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  leftStr = genNodeRvalueF(NODE_LEFT(def));
+	  rightStr = genNodeRvalueF(NODE_RIGHT(def));
+	  fprintf(outfile, "\t AddMyFloatA(%s, %s, %s);\n", 
+		  name1, leftStr, rightStr);
+	  break;
+	case MINUS_EXPR:
+	  fprintf(outfile, "\t /* minus: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  leftStr = genNodeRvalueF(NODE_LEFT(def));
+	  rightStr = genNodeRvalueF(NODE_RIGHT(def));
+	  fprintf(outfile, "\t SubstractMyFloatA(%s, %s, %s);\n", 
+		  name1, leftStr, rightStr);
+	  break;
+	case MULT_EXPR:
+	  fprintf(outfile, "\t /* mult: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  leftStr = genNodeRvalueF(NODE_LEFT(def));
+	  rightStr = genNodeRvalueF(NODE_RIGHT(def));
+	  fprintf(outfile, "\t MultiplyMyFloatA(%s, %s, %s);\n", 
+		  name1, leftStr, rightStr);
+	  break;
+	case DIV_EXPR:
+	  fprintf(outfile, "\t /* div: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  leftStr = genNodeRvalueF(NODE_LEFT(def));
+	  rightStr = genNodeRvalueF(NODE_RIGHT(def));
+	  fprintf(outfile, "\t DivideMyFloatA(%s, %s, %s);\n", 
+		  name1, leftStr, rightStr);
+	  break;
+	case EXP_EXPR:           
+	  fprintf(outfile, "\t /* exponentiation: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  leftStr = genNodeRvalueF(NODE_LEFT(def));
+          ratexp = isRational(NODE_RIGHT(def), &numer, &deno);
+	  if(ratexp && (ratexp == 8 || ratexp == -8)) { if(use_rational_exponent) { ratexp=(ratexp==8? 1 : -1);}}
+          if(ratexp == 1 || ratexp == -1)
+            {
+              int spp=1, jk, pp = intNodeValue(numer,&jk);
+              int qq = intNodeValue(deno,&jk);
+              double expo;
+              if(ratexp < 0) qq = -qq;
+              if(abs(qq) <= 2) {
+                    /* integer or half integer exponent */
+                    fprintf(outfile, "\t\t  /* integer exponent or half integer */\n");
+                    pp = pp * qq;
+                    if(pp < 0) { spp = -1; pp=-pp;}
+                    if(abs(qq) == 2) { 
+                      pp /= 2;
+                      if(spp == -1) {
+                        fprintf(outfile, "\t\t sqrtMyFloatA(svar1,%s);\n", leftStr);                      
+                        fprintf(outfile, "\t\t DivideMyFloatA(svar5,oneOverN[0],svar1);\n");                      
+                      }
+                      else
+                        fprintf(outfile, "\t\t sqrtMyFloatA(svar5,%s);\n", leftStr);                      
+                    } else {
+                      if(spp == -1)
+                        fprintf(outfile, "\t\t DivideMyFloatA(svar5,oneOverN[0],%s);\n", leftStr);                      
+                      else
+                        fprintf(outfile, "\t\t AssignMyFloat(svar5,%s);\n", leftStr); 
+                    }
+                    fprintf(outfile, "\t\t { int n=%d, m, mn=0; \n", pp);
+                    fprintf(outfile, "\t\t   switch(n) {\n");
+                    fprintf(outfile, "\t\t\t  case 0: AssignMyFloat(%s, oneOverN[0]); break;\n", name1);
+                    fprintf(outfile, "\t\t\t  case 1: AssignMyFloat(%s, svar5); break;\n", name1);
+                    fprintf(outfile, "\t\t\t  case 2: AssignMyFloat(svar1, svar5); MultiplyMyFloatA(%s,svar1,svar5); break;\n",
+                            name1);
+                    fprintf(outfile, "\t\t\t  case 3: AssignMyFloat(svar1, svar5); MultiplyMyFloatA(svar2,svar1,svar5);\n");
+                    fprintf(outfile, "\t\t\t          MultiplyMyFloatA(%s,svar1,svar2); break;\n", name1);
+                    fprintf(outfile, "\t\t\t  default:\n");
+                    fprintf(outfile, "\t\t\t   AssignMyFloat(svar1, oneOverN[0]); AssignMyFloat(svar2, svar5);\n");
+                    fprintf(outfile, "\t\t\t     while(mn==0) {\n");
+                    fprintf(outfile, "\t\t\t        m=n; n /=2; if(n+n != m) {\n");
+                    fprintf(outfile, "\t\t\t           AssignMyFloat(svar3, svar1); MultiplyMyFloatA(svar1, svar3, svar2);\n");
+                    fprintf(outfile, "\t\t\t           if(n==0){ mn=1; ");
+                    fprintf(outfile, "    AssignMyFloat(%s,svar1);}\n",name1);
+                    fprintf(outfile, "\t\t\t         }\n");
+                    fprintf(outfile, "\t\t\t        if(mn==0) {AssignMyFloat(svar3, svar2);AssignMyFloat(svar4, svar2);\n");
+                    fprintf(outfile, "\t\t\t                   MultiplyMyFloatA(svar2, svar3,svar4);}\n");
+                    fprintf(outfile, "\t\t\t       }\n");
+                    fprintf(outfile, "\t\t\t   break; \n");
+                    fprintf(outfile, "\t\t\t  }\n\t\t } \n");
+              } else { /* fishy here */
+                    expo = (double)(pp)/(double)qq;
+                    fprintf(outfile, "\t\t if(MyFloatA_GT_B(%s,MyFloatZERO)) { \n", leftStr);
+		    if(icnt2&1)fprintf(outfile, "\t\t    ExponentiateMyFloatA(%s, %s, MakeMyFloatB(tvar2,%.15f));\n", name1, leftStr, expo);
+		    else fprintf(outfile, "\t\t    ExponentiateMyFloatA(%s, %s, MakeMyFloatB(uvar2,%.15f));\n", name1, leftStr, expo);
+		    icnt2++;
+                    fprintf(outfile, "\t\t } else if(MyFloatA_LT_B(%s,MyFloatZERO)) {\n", leftStr);
+                    if( qq & 1) { /* odd root, ok */
+                      if(pp & 1) { /* pp is odd */
+                        fprintf(outfile, "\t\t    NegateMyFloatA(svar1, %s);\n", leftStr);
+			if(icnt2&1)fprintf(outfile, "\t\t    ExponentiateMyFloatA(svar2, svar1, MakeMyFloatB(tvar2,%.15f));\n", expo);
+			else  fprintf(outfile, "\t\t    ExponentiateMyFloatA(svar2, svar1, MakeMyFloatB(uvar2,%.15f));\n", expo);
+			icnt2++;
+                        fprintf(outfile, "\t\t    NegateMyFloatA(%s,svar2);\n", name1);
+                      } else { /* pp is even */
+                        fprintf(outfile, "\t\t    NegateMyFloatA(svar1, %s);\n", leftStr);
+                        if(icnt2&1)fprintf(outfile, "\t\t    ExponentiateMyFloatA(%s, svar1, MakeMyFloatB(tvar2,%.15f));\n", name1, expo);
+			else fprintf(outfile, "\t\t    ExponentiateMyFloatA(%s, svar1, MakeMyFloatB(uvar2,%.15f));\n", name1, expo);
+			icnt2++;
+                      }
+                    } else { /* qq is even: ?^(pp/qq) is undefiled */
+                      fprintf(outfile, "\t\t   fprintf(stderr, \"Attemp to compute negative^(%d/%d)\");exit(0);\n",pp,qq);
+                    }
+                    fprintf(outfile, "\t\t } else {\n");                    
+                    if(expo > 0.0) { fprintf(outfile, "\t\t    AssignMyFloat(%s,oneOverN[0]);\n\t\t }\n", name1);}
+                    else { fprintf(outfile, "\t\t   fprintf(stderr,\"Attemp to compute 0^(%d/%d)\");exit(0);\n\t\t}\n",pp,qq);}
+              }
+            }
+          else
+            {
+              rightStr = genNodeRvalueF(NODE_RIGHT(def));
+              fprintf(outfile, "\t ExponentiateMyFloatA(%s, %s, %s);\n", 
+                      name1, leftStr, rightStr);
+            }
+	  break;              
+	case NEGATE_EXPR:
+	  fprintf(outfile, "\t /* negate: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  leftStr = genNodeRvalueF(NODE_LEFT(def));
+	  fprintf(outfile, "\t NegateMyFloatA(%s,%s);\n", 
+		  name1, leftStr);
+	  break;                            
+	case CALL_EXPR:
+	  fprintf(outfile, "\t /* call: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  leftStr = NODE_NAME(NODE_LEFT(def));
+	  rightStr = genNodeRvalueF(NODE_RIGHT(def));
+	  fprintf(outfile, "\t %sMyFloatA(%s, %s);\n", 
+		  leftStr, name1, rightStr);
+	  break;                            
+	case IF_ELSE_EXPR:
+	  fprintf(outfile, "\t /* if_else: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  {
+	    char *condstr = genNodeRvalueI(IF_ELSE_COND(def));
+	    leftStr = genNodeRvalueF(NODE_LEFT(def));
+	    rightStr = genNodeRvalueF(NODE_RIGHT(def));
+	    fprintf(outfile, "\t if(%s)\n\t\t {AssignMyFloat(%s,%s);}\n\t else\n\t\t {AssignMyFloat(%s,%s);}\n",
+		    condstr, name1, leftStr, name1, rightStr);
+	  }              
+	break;
+	case GE_EXPR:
+	case GT_EXPR:
+	case LE_EXPR:
+	case LT_EXPR:
+	case EQ_EXPR:
+	case NEQ_EXPR:
+	case AND_EXPR:
+	case OR_EXPR:
+	  {
+	    fprintf(stderr, "Internal Error: bool expr appeared in wrong place.\n");
+	    exit(43);
+	  }
+	break;
+	}	  
+    }
+  else if(VAR_IS_GLOBAL_IVAR(var))
+    {
+      switch(code)
+	{
+	case ID_NODE:
+	  fprintf(outfile, "\t /* id: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  name2 = genGlobalVarLvalue(var);
+	  fprintf(outfile, "\t %s=(int)%s;\n",name1,name2);
+	  break;
+	case INT_CST:
+	case FLOAT_CST:
+	  fprintf(outfile, "\t /* const: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  fprintf(outfile, "\t %s=%s;\n", name1, genCstIString(def));
+	  break;  
+	case ARRAY_REF: 
+	  fprintf(outfile, "\t /* array_ref: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  fprintf(outfile, "\t %s=(int)%s;\n", name1, genArrayRef(def));
+	  break;
+	case PLUS_EXPR:
+	  fprintf(outfile, "\t /* plus: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  leftStr = genNodeRvalueI(NODE_LEFT(def));
+	  rightStr = genNodeRvalueI(NODE_RIGHT(def));
+	  fprintf(outfile, "\t %s=%s+%s;\n",name1, leftStr, rightStr);
+	  break;
+	case MINUS_EXPR:
+	  fprintf(outfile, "\t /* minus: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  leftStr = genNodeRvalueI(NODE_LEFT(def));
+	  rightStr = genNodeRvalueI(NODE_RIGHT(def));
+	  fprintf(outfile, "\t %s=%s-%s;\n",name1, leftStr, rightStr);
+	  break;
+	case MULT_EXPR:
+	  fprintf(outfile, "\t /* mult: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  leftStr = genNodeRvalueI(NODE_LEFT(def));
+	  rightStr = genNodeRvalueI(NODE_RIGHT(def));
+	  fprintf(outfile, "\t %s=%s*%s;\n",name1, leftStr, rightStr);
+	  break;
+	case DIV_EXPR:
+	  fprintf(outfile, "\t /* div: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  leftStr = genNodeRvalueI(NODE_LEFT(def));
+	  rightStr = genNodeRvalueI(NODE_RIGHT(def));
+	  fprintf(outfile, "\t %s=%s/%s;\n",name1, leftStr, rightStr);
+	  break;
+	case EXP_EXPR:           
+	  fprintf(outfile, "\t /* exponentiation: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  leftStr = genNodeRvalueI(NODE_LEFT(def));
+          ratexp = isRational(NODE_RIGHT(def), &numer, &deno);
+	  if(ratexp && (ratexp == 8 || ratexp == -8)) { if(use_rational_exponent) { ratexp=(ratexp==8? 1 : -1);}}
+          if(ratexp == 1 || ratexp == -1)
+            {
+              int jk, pp = intNodeValue(numer,&jk);
+              int qq = intNodeValue(deno,&jk);
+              double expo;
+              if(ratexp < 0) qq = -qq;
+              expo = (double)(pp)/(double)qq;
+              fprintf(outfile, "\t { double base;\n");
+              fprintf(outfile, "\t MyFloatToDouble(base,%s);\n", leftStr);
+              fprintf(outfile, "\t %s=(int)pow(base, %.15f);\n", 
+                      name1, expo);
+              fprintf(outfile, "\t } \n");
+            }
+          else
+            {
+              rightStr = genNodeRvalueI(NODE_RIGHT(def));
+              fprintf(outfile, "\t {double base, expo;\n");
+              fprintf(outfile, "\t MyFloatToDouble(base, %s);\n", leftStr);
+              fprintf(outfile, "\t MyFloatToDouble(expo, %s);\n", rightStr);
+              fprintf(outfile, "\t %s=(int)(pow(base, expo));\n",name1);
+              fprintf(outfile, "\t}\n");
+            }
+	  break;              
+	case NEGATE_EXPR:
+	  fprintf(outfile, "\t /* negate: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  leftStr = genNodeRvalueI(NODE_LEFT(def));
+	  fprintf(outfile, "\t %s=-%s;\n", name1, leftStr);
+	  break;                            
+	case CALL_EXPR:
+	  fprintf(outfile, "\t /* call: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  leftStr = NODE_NAME(NODE_LEFT(def));
+	  rightStr = genNodeRvalueF(NODE_RIGHT(def));
+	  fprintf(outfile, "\t %sMyFloatA(zvar1,%s);\n", leftStr, rightStr);
+	  fprintf(outfile, "\t MyFloatToInt(zvar1,%s);\n", name1);
+	  break;                            
+	case IF_ELSE_EXPR:
+	  fprintf(outfile, "\t /* if_else: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+	  {
+	    char *condstr = genNodeRvalueI(IF_ELSE_COND(def));
+	    leftStr = genNodeRvalueI(NODE_LEFT(def));
+	    rightStr = genNodeRvalueI(NODE_RIGHT(def));
+	    fprintf(outfile, "\t %s=(%s)?(%s):(%s);\n", name1, condstr, leftStr, rightStr);
+	  }              
+	break;
+        case GE_EXPR:
+	  fprintf(outfile, "\t /* GE: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+          outputBoolExpr(code, NODE_LEFT(def), NODE_RIGHT(def), name1);
+          break;
+        case GT_EXPR:
+	  fprintf(outfile, "\t /* GT: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+          outputBoolExpr(code, NODE_LEFT(def), NODE_RIGHT(def), name1);
+          break;
+        case LE_EXPR:
+	  fprintf(outfile, "\t /* LE: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+          outputBoolExpr(code, NODE_LEFT(def), NODE_RIGHT(def), name1);
+          break;
+        case LT_EXPR:
+	  fprintf(outfile, "\t /* LT: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+          outputBoolExpr(code, NODE_LEFT(def), NODE_RIGHT(def), name1);
+          break;
+        case EQ_EXPR:
+	  fprintf(outfile, "\t /* EQ: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+          outputBoolExpr(code, NODE_LEFT(def), NODE_RIGHT(def), name1);
+          break;
+        case NEQ_EXPR:
+	  fprintf(outfile, "\t /* NEQ: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+          outputBoolExpr(code, NODE_LEFT(def), NODE_RIGHT(def), name1);
+          break;
+        case AND_EXPR:
+	  fprintf(outfile, "\t /* AND: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+          outputBoolExpr(code, NODE_LEFT(def), NODE_RIGHT(def), name1);
+          break;
+        case OR_EXPR:
+	  fprintf(outfile, "\t /* OR: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+          outputBoolExpr(code, NODE_LEFT(def), NODE_RIGHT(def), name1);
+          break;
+        }
+    }
+  else
+    {
+      fprintf(stderr, "Internal Error: gvar %s has an illegal type.\n", name1);
+      exit(44);
+    }
+}
+
+/*************************************************************************************************
+ *
+ *  Output the kth order derivatives of local vars in a sum block
+ */
+
+void outputSumKthDerivative(SumP sum)
+{
+  Node idx  = SUMB_IDX(sum);
+  Node *vvars  = SUMB_LVAR_LIST(sum);
+  int  from = SUMB_FROM(sum);
+  int  to   = SUMB_TO(sum);
+  int  total = SUMB_LVAR(sum);
+  int  k;
+   
+  fprintf(outfile, "\n\t    /*begin kth deri of a sum block*/\n");
+  fprintf(outfile, "\t    {\n\t       register int %s;\n", NODE_NAME(idx));
+  fprintf(outfile, "\t       for(%s = %d, m = 0; %s <= %d; %s += 1, m++) {\n", 
+	  NODE_NAME(idx), from, NODE_NAME(idx), to, NODE_NAME(idx));
+  for(k=0; k < total; k++)
+    {
+      Node var = vvars[k];
+      Node def = variables[ID_V_INDEX(var)].def;
+      computeKthDeri(var,def);
+    }
+  fprintf(outfile, "\t       }\n\t    }/* end of sum block, kth */\n");
+}
+
+void sumUptoVarKth(SumP sum, Node var)
+{
+  Node expr = SUMB_EXPR(sum);
+  int  from = SUMB_FROM(sum);
+  int  to   = SUMB_TO(sum);
+  int  ss = to-from+1;
+
+  char *vname = genVarLvalueKth(var, "k");
+  char *lname = genVarLvalueKth(expr,"k");
+  fprintf(outfile, "\t\t {/*add up deriv of a sum block*/\n");
+  fprintf(outfile, "\t\t    static MY_FLOAT tmpFloat, tmpA;\n");
+  fprintf(outfile, "\t\t    if(initialized==0) { InitMyFloat(tmpA); InitMyFloat(tmpFloat);}\n");
+  fprintf(outfile, "\t\t    AssignMyFloat(tmpFloat, MyFloatZERO);\n");
+  fprintf(outfile, "\t\t    for(m = 0; m < %d; m++) {\n", ss);
+  fprintf(outfile, "\t\t\t AddMyFloatA(tmpA, tmpFloat, %s);\n", lname);
+  fprintf(outfile, "\t\t\t AssignMyFloat(tmpFloat, tmpA);\n");
+  fprintf(outfile, "\t\t    }\n"); 
+  fprintf(outfile, "\t\t    AssignMyFloat(%s, tmpFloat);\n", vname);
+  fprintf(outfile, "\t\t }/*end add up deriv of sum block*/\n\n");
+}
+/*************************************************************************************************
+ *
+ *  Output the kth order derivative of global vars except SUM_EXPR
+ */
+void outputVarKthDerivative(Node var)
+{
+  Node def = variables[ID_V_INDEX(var)].def;
+  computeKthDeri(var,def);
+}
+
+
+void computeKthDeri(Node var, Node def)
+{
+  char *leftStr, *rightStr, *name1, *name2;  
+  Node  larg, left = NODE_LEFT(def), right = NODE_RIGHT(def);
+  int   ddflag, mmflag, code = NODE_CODE(def);
+  name1 = genVarLvalueKth(var, "k");
+
+  if(NODE_IS_CST(var) || NODE_IS_CST(def))
+    {
+      fprintf(outfile, "\t\t /* constants: %s=%s ! */\n", NODE_NAME(var), NODE_INFO(def));
+      fprintf(outfile, "\t\t AssignMyFloat(%s, MyFloatZERO);\n", name1);
+      return;
+    }
+
+  switch(code)
+    {
+    case INT_CST:
+    case FLOAT_CST:
+      fprintf(outfile, "\t\t /* constants: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+      fprintf(outfile, "\t\t AssignMyFloat(%s, MyFloatZERO);\n", name1);
+      break;
+    case ID_NODE:
+      fprintf(outfile, "\t\t /* id: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+      if(ID_IS_CST(def) || ID_IS_EXTERN(def))
+	fprintf(outfile, "\t\t AssignMyFloat(%s, MyFloatZERO);\n", name1);
+      else
+	{
+	  name2 = genNodeKthDerivative(def, "k");
+	  fprintf(outfile, "\t\t AssignMyFloat(%s, %s);\n", name1, name2);
+	}
+      break;
+    case PLUS_EXPR:
+      fprintf(outfile, "\t\t /* plus: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+      if(NODE_IS_CST(left))
+	{
+	  name2 = genNodeKthDerivative(right, "k");
+	  fprintf(outfile, "\t\t AssignMyFloat(%s, %s);\n", name1, name2);
+	}
+      else if(NODE_IS_CST(right))
+	{
+	  name2 = genNodeKthDerivative(left, "k");
+	  fprintf(outfile, "\t\t AssignMyFloat(%s, %s);\n", name1, name2);
+	}
+      else
+	{
+	  leftStr = genNodeKthDerivative(left, "k");
+	  rightStr = genNodeKthDerivative(right, "k");
+	  fprintf(outfile, "\t\t AddMyFloatA(%s, %s,%s);\n", name1, leftStr, rightStr);
+	}
+      break;
+    case MINUS_EXPR:
+      fprintf(outfile, "\t\t /* minus: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+      if(NODE_IS_CST(left))
+	{
+	  name2 = genNodeKthDerivative(right, "k");
+	  fprintf(outfile, "\t\t NegateMyFloatA(%s, %s);\n", name1, name2);
+	}
+      else if(NODE_IS_CST(right))
+	{
+	  name2 = genNodeKthDerivative(left, "k");
+	  fprintf(outfile, "\t\t AssignMyFloat(%s, %s);\n", name1, name2);
+	}
+      else
+	{
+	  leftStr = genNodeKthDerivative(left, "k");
+	  rightStr = genNodeKthDerivative(right, "k");
+	  fprintf(outfile, "\t\t SubstractMyFloatA(%s, %s,%s);\n", name1, leftStr, rightStr);
+	}
+      break;
+    case MULT_EXPR:
+      fprintf(outfile, "\t\t /* mult: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+
+      if(NODE_IS_CST(left))
+	{
+	  leftStr = genNodeRvalueF(left);
+	  rightStr = genNodeKthDerivative(right, "k");
+          larg = linearTime(right, &ddflag, &mmflag);
+	  if(larg != NULL)
+	    {
+              if(larg == int_one_node)
+                {
+                  fprintf(outfile, "\t\t if(k==1) {AssignMyFloat(%s, %s);}\n", name1, leftStr);	      
+                  fprintf(outfile, "\t\t else {AssignMyFloat(%s, MyFloatZERO);}\n", name1);  
+                }
+              else
+                {
+                  fprintf(outfile, "\t\t if(k==1) { MultiplyMyFloatA(%s, %s, %s);}\n", name1, leftStr, rightStr);
+                  fprintf(outfile, "\t\t else {AssignMyFloat(%s, MyFloatZERO);}\n", name1);  
+                }
+	    }
+	  else
+	    {
+	      fprintf(outfile, "\t\t MultiplyMyFloatA(%s, %s, %s);\n", name1, leftStr, rightStr);
+	    }
+	}
+      else if(NODE_IS_CST(right))
+	{
+	  rightStr = genNodeRvalueF(right);
+	  leftStr = genNodeKthDerivative(left, "k");
+          larg = linearTime(right, &ddflag, &mmflag);
+	  if(larg != NULL)
+            {          
+              if(larg == int_one_node)
+                {
+                  fprintf(outfile, "\t\t if(k==1) {AssignMyFloat(%s, %s);}\n", name1, rightStr);	      
+                  fprintf(outfile, "\t\t else {AssignMyFloat(%s, MyFloatZERO);}\n", name1);	      
+                }
+              else
+                {
+                  fprintf(outfile, "\t\t if(k==1) {MultiplyMyFloatA(%s, %s, %s);}\n", name1, leftStr, rightStr);
+                  fprintf(outfile, "\t\t else {AssignMyFloat(%s, MyFloatZERO);}\n", name1);	      
+                }
+            }
+          else
+            {
+              fprintf(outfile, "\t\t MultiplyMyFloatA(%s, %s, %s);\n", name1, leftStr, rightStr);
+            }
+	}
+      else if(left == right)
+	{
+	  /* optimization:  x*x */
+	  char *lstr, *rstr;
+	  fprintf(outfile, "\t\t { /* multiplication */\n");
+	  fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2, tmp;\n");
+	  if( (larg = linearTime(left, &ddflag, &mmflag)) != NULL)
+	    {
+              fprintf(outfile, "\t\t\t if(initialized==0) { InitMyFloat(tmp1);InitMyFloat(tmp2); InitMyFloat(tmp);}\n");
+              fprintf(outfile, "\t\t\t AssignMyFloat(tmp, MyFloatZERO);\n");
+	      lstr = genNodeKthDerivative(left,  "0");
+	      rstr = genNodeKthDerivative(right, "k");
+	      fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp1, %s, %s);\n",lstr,rstr);
+	      lstr = genNodeKthDerivative(left,  "1");
+	      rstr = genNodeKthDerivative(right, "k-1");
+	      fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp2, %s, %s);\n",lstr,rstr);
+	      fprintf(outfile, "\t\t\t AddMyFloatA(tmp, tmp2, tmp1);\n");
+	      fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp);\n", name1);
+	      fprintf(outfile, "\t\t }\n");
+	    }
+	  else
+	    {
+	      fprintf(outfile, "\t\t\t int parity=(k&1), half=(k+1)>>1;\n");
+              fprintf(outfile, "\t\t\t if(initialized==0) { InitMyFloat(tmp1);InitMyFloat(tmp2); InitMyFloat(tmp);}\n");
+              fprintf(outfile, "\t\t\t AssignMyFloat(tmp, MyFloatZERO);\n");
+	      fprintf(outfile, "\t\t\t for(l=0; l<half; l++) {\n");
+	      lstr = genNodeKthDerivative(left,  "l");
+	      rstr = genNodeKthDerivative(right, "k-l");
+	      fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp1, %s, %s);\n",lstr,rstr);
+	      fprintf(outfile, "\t\t\t     AssignMyFloat(tmp2, tmp);\n");
+	      fprintf(outfile, "\t\t\t     AddMyFloatA(tmp, tmp2, tmp1);\n");
+	      fprintf(outfile, "\t\t\t }\n");
+	      fprintf(outfile, "\t\t\t AssignMyFloat(tmp2, tmp);\n");
+	      fprintf(outfile, "\t\t\t AddMyFloatA(tmp1, tmp2, tmp);\n");
+	      fprintf(outfile, "\t\t\t if(parity==0) {\n");	  
+	      lstr = genNodeKthDerivative(left,  "half");
+	      fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp2, %s, %s);\n",lstr,lstr);	  
+	      fprintf(outfile, "\t\t\t     AddMyFloatA(%s, tmp2, tmp1);\n",name1);
+	      fprintf(outfile, "\t\t\t } else {\n");
+	      fprintf(outfile, "\t\t\t     AssignMyFloat(%s, tmp1);\n", name1);
+	      fprintf(outfile, "\t\t\t }\n");
+	      fprintf(outfile, "\t\t }\n");
+	    }
+	}
+      else
+	{
+	  char *lstr, *rstr;
+	  fprintf(outfile, "\t\t { /* multiplication */\n");
+	  fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2, tmp;\n");
+	  fprintf(outfile, "\t\t\t if(initialized==0) { InitMyFloat(tmp1);InitMyFloat(tmp2); InitMyFloat(tmp);}\n");
+	  fprintf(outfile, "\t\t\t AssignMyFloat(tmp, MyFloatZERO);\n");
+	  /* optimization: don't do full loop if operand is linear */
+	  if( (larg = linearTime(left, &ddflag, &mmflag)) != NULL)
+	    fprintf(outfile, "\t\t\t for(l=0; l<=1; l++) {\n");
+	  else if( (larg = linearTime(right, &ddflag, &mmflag)) != NULL)      
+	    fprintf(outfile, "\t\t\t for(l=k-1; l<=k; l++) {\n");
+	  else fprintf(outfile, "\t\t\t for(l=0; l<=k; l++) {\n");
+	  lstr = genNodeKthDerivative(left,  "l");
+	  rstr = genNodeKthDerivative(right, "k-l");
+	  fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp1, %s, %s);\n",lstr,rstr);
+	  fprintf(outfile, "\t\t\t     AssignMyFloat(tmp2, tmp);\n");
+	  fprintf(outfile, "\t\t\t     AddMyFloatA(tmp, tmp2, tmp1);\n");
+	  fprintf(outfile, "\t\t\t }\n");
+	  fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp);\n", name1);
+	  fprintf(outfile, "\t\t }\n");
+	}
+      break;
+    case DIV_EXPR:
+      fprintf(outfile, "\t\t /* div: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+
+      if(NODE_IS_CST(right))
+	{
+	  leftStr = genNodeKthDerivative(left, "k");
+	  rightStr = genNodeRvalueF(right);
+	  if(left == timeVar)
+	    {
+	      if(icnt1&1)fprintf(outfile, "\t\t if(k==1) {DivideMyFloatA(%s, MakeMyFloatB(tvar1, 1), %s);}\n", name1, rightStr);
+	      else  fprintf(outfile, "\t\t if(k==1) {DivideMyFloatA(%s, MakeMyFloatB(uvar1, 1), %s);}\n", name1, rightStr);
+	      icnt1++;
+	      fprintf(outfile, "\t\t else {AssignMyFloat(%s, MyFloatZERO);}\n", name1);	      
+	    }
+	  else fprintf(outfile, "\t\t DivideMyFloatA(%s, %s, %s);\n", name1, leftStr, rightStr);
+	}
+      else if(NODE_IS_CST(left))
+	{
+	  char *lstr, *rstr;
+	  fprintf(outfile, "\t\t { /* division */\n");
+	  fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2, tmp;\n");
+	  fprintf(outfile, "\t\t\t if(initialized==0) { InitMyFloat(tmp1);InitMyFloat(tmp2); InitMyFloat(tmp);}\n");
+	  fprintf(outfile, "\t\t\t AssignMyFloat(tmp, MyFloatZERO);\n");
+	  /* optimization: don't do full loop if operand is linear */
+	  if( (larg = linearTime(right, &ddflag, &mmflag)) != NULL)      
+	    fprintf(outfile, "\t\t\t for(l=(k==1?1:k-1); l<=k; l++) {\n");
+	  else 
+	    fprintf(outfile, "\t\t\t for(l=1; l<=k; l++) {\n");
+	  lstr = genNodeKthDerivative(var,  "k-l");
+	  rstr = genNodeKthDerivative(right, "l");	      
+	  fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp1, %s,%s);\n", rstr, lstr);
+	  fprintf(outfile, "\t\t\t     AssignMyFloat(tmp2, tmp);\n");
+	  fprintf(outfile, "\t\t\t     SubstractMyFloatA(tmp, tmp2, tmp1);\n");
+	  fprintf(outfile, "\t\t\t }\n");
+	  rightStr = genNodeRvalueF(right);
+	  fprintf(outfile, "\t\t\t DivideMyFloatA(%s, tmp, %s);\n", name1, rightStr);
+	  fprintf(outfile, "\t\t }\n");	      
+	}
+      else
+	{
+	  char *str, *rstr;
+	  fprintf(outfile, "\t\t { /* division */\n");
+	  fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2, tmp;\n");
+	  fprintf(outfile, "\t\t\t if(initialized==0) { InitMyFloat(tmp1);InitMyFloat(tmp2); InitMyFloat(tmp);}\n");
+	  fprintf(outfile, "\t\t\t AssignMyFloat(tmp, MyFloatZERO);\n");
+	  if( (larg = linearTime(right, &ddflag, &mmflag)) != NULL)      
+	    fprintf(outfile, "\t\t\t for(l=1; l<=1; l++) {\n");
+	  else 
+	    fprintf(outfile, "\t\t\t for(l=1; l<=k; l++) {\n");
+	  rstr = genNodeKthDerivative(right, "l");
+	  str  = genNodeKthDerivative(var,  "k-l");
+	  fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp1, %s,%s);\n", rstr, str);
+	  fprintf(outfile, "\t\t\t     AssignMyFloat(tmp2, tmp);\n");
+	  fprintf(outfile, "\t\t\t     AddMyFloatA(tmp, tmp2, tmp1);\n");
+	  fprintf(outfile, "\t\t\t }\n");
+	  leftStr  = genNodeKthDerivative(left,  "k");
+	  fprintf(outfile, "\t\t\t     AssignMyFloat(tmp2, tmp);\n");
+	  fprintf(outfile, "\t\t\t SubstractMyFloatA(tmp, %s, tmp2);\n", leftStr);
+	  rightStr = genNodeRvalueF(right);
+	  fprintf(outfile, "\t\t\t DivideMyFloatA(%s, tmp, %s);\n", name1, rightStr);
+	  fprintf(outfile, "\t\t }\n");
+	}
+      break;
+    case NEGATE_EXPR:
+      fprintf(outfile, "\t\t /* negation: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+      leftStr = genNodeKthDerivative(left, "k");
+      fprintf(outfile, "\t\t NegateMyFloatA(%s, %s);\n", name1, leftStr);	  
+      break;
+    case EXP_EXPR:
+      fprintf(outfile, "\t\t /* exponentiation: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+      if(ID_IS_CST(right) == 0)
+	{
+	  fprintf(stderr, "Internal Error: exponent is not a constant in 'outputDerivative'.\n");
+	  fprintf(stderr, "Node info: %s, offending variable %s\n", 
+                  NODE_GIVEN_NAME(var)? NODE_GIVEN_NAME(var): NODE_INFO(var), 
+                  NODE_GIVEN_NAME(right)?NODE_GIVEN_NAME(right): NODE_NAME(right));
+	}
+      else
+	{
+          Node numer = NULL, denom = NULL;
+	  char *lstr, *rstr, *str;
+	  int expo = 0, junk=0, ratexp=0;
+	  fprintf(outfile, "\t\t { /* exponentiation */\n");
+	  if( ID_IS_INT(right) ) expo = intNodeValue(right, &junk);
+
+	  if(ID_IS_INT(right) && junk >= 0 && expo == 2)
+	    {
+	      fprintf(outfile, "\t\t\t\t /* expr^2 */ \n");
+	      if( (larg = linearTime(left, &ddflag, &mmflag)) != NULL)
+		{
+                  fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2, tmp;\n");
+                  fprintf(outfile, "\t\t\t if(initialized==0) { InitMyFloat(tmp1);InitMyFloat(tmp2); InitMyFloat(tmp);}\n");
+                  fprintf(outfile, "\t\t\t AssignMyFloat(tmp, MyFloatZERO);\n");
+		  lstr = genNodeKthDerivative(left,  "0");
+		  rstr = genNodeKthDerivative(left, "k");
+		  fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp1, %s, %s);\n",lstr,rstr);
+		  lstr = genNodeKthDerivative(left,  "1");
+		  rstr = genNodeKthDerivative(left, "k-1");
+		  fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp2, %s, %s);\n",lstr,rstr);
+		  fprintf(outfile, "\t\t\t AddMyFloatA(tmp, tmp2, tmp1);\n");
+		  fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp);\n", name1);
+		}
+	      else
+		{
+                  fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2, tmp;\n");
+		  fprintf(outfile, "\t\t\t int parity=(k&1), half=(k+1)>>1;\n");
+                  fprintf(outfile, "\t\t\t if(initialized==0) { InitMyFloat(tmp1);InitMyFloat(tmp2); InitMyFloat(tmp);}\n");
+		  fprintf(outfile, "\t\t\t AssignMyFloat(tmp,  MyFloatZERO);\n");
+		  fprintf(outfile, "\t\t\t for(l=0; l<half; l++) {\n");
+		  lstr = genNodeKthDerivative(left,  "l");
+		  rstr = genNodeKthDerivative(left, "k-l");
+		  fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp1, %s, %s);\n",lstr,rstr);
+		  fprintf(outfile, "\t\t\t     AssignMyFloat(tmp2, tmp);\n");
+		  fprintf(outfile, "\t\t\t     AddMyFloatA(tmp, tmp2, tmp1);\n");
+		  fprintf(outfile, "\t\t\t }\n");
+		  fprintf(outfile, "\t\t\t AssignMyFloat(tmp2, tmp);\n");
+		  fprintf(outfile, "\t\t\t AddMyFloatA(tmp1, tmp2, tmp);\n");
+		  fprintf(outfile, "\t\t\t if(parity==0) {\n");	  
+		  lstr = genNodeKthDerivative(left,  "half");
+		  fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp2, %s, %s);\n",lstr,lstr);	  
+		  fprintf(outfile, "\t\t\t     AddMyFloatA(%s, tmp2, tmp1);\n", name1);
+		  fprintf(outfile, "\t\t\t } else { \n");
+		  fprintf(outfile, "\t\t\t     AssignMyFloat(%s, tmp1);\n", name1);
+		  fprintf(outfile, "\t\t\t }\n");
+		}
+	    }
+          else if((ratexp = isRational(right, &numer, &denom)) != 0) /* x^ (p/q) */
+            {
+              int jnk1=0;
+              int pp = intNodeValue(numer, &jnk1);
+              int qq = intNodeValue(denom, &jnk1);
+              if(ratexp == -1) pp = -pp;
+              if(qq != 1)
+                {
+                  fprintf(outfile, "\t\t\t\t /* expr^(%d/%d)/ */ \n", pp, qq);
+                  fprintf(outfile, "\t\t\t int  ppk=(%d)*k, qqk=(%d)*k, pq=%d;\n", pp, qq, pp+qq);
+                }
+              else
+                {
+                  fprintf(outfile, "\t\t\t\t /* expr^(%d)/ */ \n", pp);
+                  fprintf(outfile, "\t\t\t int  ppk=(%d)*k, qqk=k, pq=(%d+1);\n", pp,pp);
+                }
+              fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2, tmp3, tmpC, tmp;\n");
+              fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+              fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2); InitMyFloat(tmp3);\n");
+              fprintf(outfile, "\t\t\t  InitMyFloat(tmpC);InitMyFloat(tmp);\n");
+              fprintf(outfile, "\t\t\t }\n");              
+	      fprintf(outfile, "\t\t\t AssignMyFloat(tmp,  MyFloatZERO);\n");
+	      fprintf(outfile, "\t\t\t for(l=0; l<k; l++) {\n");
+	      fprintf(outfile, "\t\t\t     MakeMyFloatA(tmpC, ppk);\n");
+	      fprintf(outfile, "\t\t\t     ppk -= pq  ;\n");
+	      str = genNodeKthDerivative(var, "l");
+	      lstr = genNodeKthDerivative(left, "k-l");
+	      fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp1, %s,%s);\n", str, lstr);
+	      fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp2, tmpC, tmp1);\n");
+	      fprintf(outfile, "\t\t\t     AddMyFloatA(tmp1,  tmp, tmp2);\n");
+	      fprintf(outfile, "\t\t\t     AssignMyFloat(tmp,  tmp1);\n");
+	      fprintf(outfile, "\t\t\t }\n");
+	      leftStr = genNodeRvalueF(left);
+	      fprintf(outfile, "\t\t\t MakeMyFloatA(tmp3,qqk);\n");
+	      fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp1, %s, tmp3);\n", leftStr);
+	      fprintf(outfile, "\t\t\t DivideMyFloatA(%s, tmp, tmp1);\n", name1);              
+            }
+	  else
+	    {
+              fprintf(outfile, "\t\t\t static MY_FLOAT tmp, tmp1, tmp2, tmp3, tmpkml, tmpl,cco, exponent;\n");
+              fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+              fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2); InitMyFloat(tmp3);InitMyFloat(tmpkml);\n");
+              fprintf(outfile, "\t\t\t  InitMyFloat(tmpl); InitMyFloat(cco); InitMyFloat(exponent);\n");
+              fprintf(outfile, "\t\t\t }\n");
+	      fprintf(outfile, "\t\t\t AssignMyFloat(exponent, %s);\n", genNodeRvalueF(right));
+	      fprintf(outfile, "\t\t\t AssignMyFloat(tmp,  MyFloatZERO);\n");
+	      fprintf(outfile, "\t\t\t for(l=0; l<k; l++) {\n");
+	      fprintf(outfile, "\t\t\t     int kml = k-l;\n");
+	      fprintf(outfile, "\t\t\t     MakeMyFloatA(tmpkml, kml);\n");
+	      fprintf(outfile, "\t\t\t     MakeMyFloatA(tmpl, l);\n");
+	      fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp3,  tmpkml, exponent);\n");
+	      fprintf(outfile, "\t\t\t     SubstractMyFloatA(cco,  tmp3, tmpl);\n");
+	      str = genNodeKthDerivative(var, "l");
+	      lstr = genNodeKthDerivative(left, "k-l");
+	      fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp1, %s,%s);\n", str, lstr);
+	      fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp2, tmp1, cco);\n");
+	      fprintf(outfile, "\t\t\t     AssignMyFloat(tmp1, tmp);\n");
+	      fprintf(outfile, "\t\t\t     AddMyFloatA(tmp,  tmp1, tmp2);\n");
+	      fprintf(outfile, "\t\t\t }\n");
+	      leftStr = genNodeRvalueF(left);
+	      fprintf(outfile, "\t\t\t MakeMyFloatA(tmp3,k);\n");
+	      fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp1, %s, tmp3);\n", leftStr);
+	      fprintf(outfile, "\t\t\t DivideMyFloatA(%s, tmp, tmp1);\n", name1);
+	    }
+	  fprintf(outfile, "\t\t}\n");
+	}
+      break;	  
+
+    case CALL_EXPR:
+      fprintf(outfile, "\t\t /* call: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+      {
+	char *fname = ID_NAME(left);
+	char *rstr, *astr, *bstr, *str;
+	int  dflag, mflag;
+	Node carg;
+
+	if(NODE_DERI_DONE(var)) 
+	  {
+	    fprintf(outfile, "\t\t\t /* computed already */\n");
+	    return;
+	  }
+	
+	if(!strcmp(fname, "sin"))
+	  {
+	    Node budy = NODE_BUDY(var);
+	    NODE_DERI_DONE(var) = 1;
+	    NODE_DERI_DONE(budy) = 1;
+	    carg = linearTime(right, &dflag, &mflag);
+	    if(carg)
+	      {
+		fprintf(outfile, "\t\t { /* call sin cos */\n");
+		if(carg == int_one_node)
+		  {
+		    if(mflag == 0) /* t+cst */
+		      {
+			fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2;\n");
+                        fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                        fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2); \n");
+                        fprintf(outfile, "\t\t\t }\n");
+			bstr = genNodeKthDerivative(budy, "k-1");	    
+			astr = genNodeKthDerivative(var,  "k-1");	    
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, %s, oneOverN[k]);\n", name1, bstr);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp1, %s, oneOverN[k]);\n", astr);
+			fprintf(outfile, "\t\t\t NegateMyFloatA(tmp2, tmp1);\n");
+			fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp2);\n", genVarLvalueKth(budy, "k"));
+		      }
+		    else  /* cst-t */
+		      {
+			fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2;\n");
+                        fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                        fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2); \n");
+                        fprintf(outfile, "\t\t\t }\n");
+			bstr = genNodeKthDerivative(budy, "k-1");	    
+			astr = genNodeKthDerivative(var,  "k-1");	    
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp1, %s, oneOverN[k]);\n", bstr);
+			fprintf(outfile, "\t\t\t NegateMyFloatA(tmp2, tmp1);\n");
+			fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp2);\n", name1);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, %s, oneOverN[k]);\n",
+				genVarLvalueKth(budy, "k"), astr);
+		      }
+		  }
+		else
+		  {
+		    char  *tstr = genNodeRvalueF(carg);
+		    if(mflag == 0) /* a*t+cst */
+		      {
+			fprintf(outfile, "\t\t\t static MY_FLOAT tmp, tmp1, tmp2;\n");
+                        fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                        fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2); InitMyFloat(tmp);\n");
+                        fprintf(outfile, "\t\t\t }\n");
+			bstr = genNodeKthDerivative(budy, "k-1");	    
+			astr = genNodeKthDerivative(var,  "k-1"); 
+			if(dflag == 0) fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp, oneOverN[k], %s);\n", tstr);
+			else fprintf(outfile, "\t\t\t DivideMyFloatA(tmp, oneOverN[k], %s);\n", tstr);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, %s, tmp);\n", name1, bstr);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp2, tmp, %s);\n", astr);
+			fprintf(outfile, "\t\t\t NegateMyFloatA(tmp1, tmp2);\n");
+			fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp1);\n", genVarLvalueKth(budy, "k"));
+		      }
+		    else  /* cst-a*t */
+		      {
+			fprintf(outfile, "\t\t\t static MY_FLOAT tmp, tmp1, tmp2;\n");
+                        fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                        fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2); InitMyFloat(tmp);\n");
+                        fprintf(outfile, "\t\t\t }\n");
+			bstr = genNodeKthDerivative(budy, "k-1");	    
+			astr = genNodeKthDerivative(var,  "k-1"); 
+			if(dflag == 0) fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp, oneOverN[k], %s);\n", tstr);
+			else fprintf(outfile, "\t\t\t DivideMyFloatA(tmp, oneOverN[k], %s);\n", tstr);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp2, tmp, %s);\n", bstr);
+			fprintf(outfile, "\t\t\t NegateMyFloatA(tmp1, tmp2);\n");
+			fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp1);\n", name1);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, %s, tmp);\n", genVarLvalueKth(budy,"k"), astr);
+		      }	
+		  }
+		fprintf(outfile, "\t\t }\n");		
+	      }
+	    else
+	      {	    
+		fprintf(outfile, "\t\t { /* call sin cos */\n");
+		fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2, tmp3, tmp, ctmp;\n");
+		fprintf(outfile, "\t\t\t static MY_FLOAT smp2, smp3, smp;\n");
+                fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2); InitMyFloat(tmp3);\n");
+                fprintf(outfile, "\t\t\t  InitMyFloat(tmp);InitMyFloat(ctmp); InitMyFloat(smp2);\n");
+                fprintf(outfile, "\t\t\t  InitMyFloat(smp2);InitMyFloat(smp3); InitMyFloat(smp);\n");
+                fprintf(outfile, "\t\t\t }\n");
+
+		fprintf(outfile, "\t\t\t AssignMyFloat(tmp,  MyFloatZERO);\n");
+		fprintf(outfile, "\t\t\t AssignMyFloat(smp,  MyFloatZERO);\n");
+		fprintf(outfile, "\t\t\t for(l=0; l<k; l++) {\n");
+		fprintf(outfile, "\t\t\t     MakeMyFloatA(tmp1, k-l);\n");
+		rstr = genNodeKthDerivative(right, "k-l");	    
+		fprintf(outfile, "\t\t\t     MultiplyMyFloatA(ctmp, tmp1, %s);\n", rstr);
+		bstr = genNodeKthDerivative(budy, "l");	    
+		astr = genNodeKthDerivative(var,  "l");	    
+		fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp2, ctmp, %s);\n", bstr);
+		fprintf(outfile, "\t\t\t     MultiplyMyFloatA(smp2, ctmp, %s);\n", astr);
+		fprintf(outfile, "\t\t\t     AddMyFloatA(tmp3, tmp, tmp2);\n");
+		fprintf(outfile, "\t\t\t     AddMyFloatA(smp3, smp, smp2);\n");
+		fprintf(outfile, "\t\t\t     AssignMyFloat(tmp, tmp3);\n");
+		fprintf(outfile, "\t\t\t     AssignMyFloat(smp, smp3);\n");
+		fprintf(outfile, "\t\t\t }\n");
+		fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, tmp, oneOverN[k]);\n", name1);
+		fprintf(outfile, "\t\t\t NegateMyFloatA(tmp, smp);\n");
+		fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, tmp, oneOverN[k]);\n", genVarLvalueKth(budy, "k"));
+		fprintf(outfile, "\t\t }\n");
+	      }
+	  }
+	else if(!strcmp(fname, "cos"))
+	  {
+	    Node budy = NODE_BUDY(var);
+	    NODE_DERI_DONE(var) = 1;
+	    NODE_DERI_DONE(budy) = 1;
+	    carg = linearTime(right, &dflag, &mflag);
+	    if(carg)
+	      {
+		fprintf(outfile, "\t\t { /* call cos sin */\n");
+		if(carg == int_one_node)
+		  {
+		    if(mflag == 0) /* t+cst */
+		      {
+			fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2;\n");
+                        fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                        fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2);\n");
+                        fprintf(outfile, "\t\t\t }\n");
+
+			bstr = genNodeKthDerivative(budy, "k-1");	    
+			astr = genNodeKthDerivative(var,  "k-1");	    
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp1, %s, oneOverN[k]);\n", bstr);
+			fprintf(outfile, "\t\t\t NegateMyFloatA(tmp2, tmp1);\n");
+			fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp2);\n", name1);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, %s, oneOverN[k]);\n", 
+				genVarLvalueKth(budy, "k"), astr);
+		      }
+		    else /* cst-t */
+		      {
+			fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2;\n");
+                        fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                        fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2);\n");
+                        fprintf(outfile, "\t\t\t }\n");
+			bstr = genNodeKthDerivative(budy, "k-1");	    
+			astr = genNodeKthDerivative(var,  "k-1");	    
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, %s, oneOverN[k]);\n", name1, bstr);
+			fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp2);\n", name1);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp1, %s, oneOverN[k]);\n", astr);
+			fprintf(outfile, "\t\t\t NegateMyFloatA(tmp2, tmp1);\n");
+			fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp2);\n", genVarLvalueKth(budy, "k"));
+		      }
+		  }
+		else
+		  {
+		    char  *tstr = genNodeRvalueF(carg);
+		    if(mflag == 0) /* a*t+cst */
+		      {
+			fprintf(outfile, "\t\t\t static MY_FLOAT tmp, tmp1, tmp2;\n");
+                        fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                        fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2);InitMyFloat(tmp);\n");
+                        fprintf(outfile, "\t\t\t }\n");
+			bstr = genNodeKthDerivative(budy, "k-1");	    
+			astr = genNodeKthDerivative(var,  "k-1"); 
+			if(dflag == 0)fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp, oneOverN[k], %s);\n", tstr);
+			else fprintf(outfile, "\t\t\t DivideMyFloatA(tmp, oneOverN[k], %s);\n", tstr);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp2, tmp, %s);\n", bstr);
+			fprintf(outfile, "\t\t\t NegateMyFloatA(tmp1, tmp2);\n");
+			fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp1);\n", name1);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, %s, tmp);\n", 
+				genVarLvalueKth(budy, "k"), astr);
+		      }
+		    else  /* cst-a*t */
+		      {
+			fprintf(outfile, "\t\t\t static MY_FLOAT tmp, tmp1, tmp2;\n");
+                        fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                        fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2);InitMyFloat(tmp);\n");
+                        fprintf(outfile, "\t\t\t }\n");
+			bstr = genNodeKthDerivative(budy, "k-1");	    
+			astr = genNodeKthDerivative(var,  "k-1"); 
+			if(dflag == 0)fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp, oneOverN[k], %s);\n", tstr);
+			else fprintf(outfile, "\t\t\t DivideMyFloatA(tmp, oneOverN[k], %s);\n", tstr);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, %s, tmp);\n", name1, bstr);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp2, %s, tmp);\n", astr);
+			fprintf(outfile, "\t\t\t NegateMyFloatA(tmp1, tmp2);\n");
+			fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp1);\n", genVarLvalueKth(budy,"k"));
+		      }		    
+		  }
+		fprintf(outfile, "\t\t }\n");		
+	      }
+	    else
+	      {
+		fprintf(outfile, "\t\t { /* call cos sin*/\n");
+		fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2, tmp3, tmp, ctmp;\n");
+		fprintf(outfile, "\t\t\t static MY_FLOAT smp2, smp3, smp;\n");
+                fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2);InitMyFloat(tmp);\n");
+                fprintf(outfile, "\t\t\t  InitMyFloat(ctmp);InitMyFloat(smp2);InitMyFloat(smp3);InitMyFloat(smp);\n");
+                fprintf(outfile, "\t\t\t }\n");
+
+		fprintf(outfile, "\t\t\t AssignMyFloat(tmp,  MyFloatZERO);\n");
+		fprintf(outfile, "\t\t\t AssignMyFloat(smp,  MyFloatZERO);\n");
+		fprintf(outfile, "\t\t\t for(l=0; l<k; l++) {\n");
+		fprintf(outfile, "\t\t\t     MakeMyFloatA(tmp1,k-l);\n");
+		rstr = genNodeKthDerivative(right, "k-l");	    
+		fprintf(outfile, "\t\t\t     MultiplyMyFloatA(ctmp, tmp1, %s);\n", rstr);
+		bstr = genNodeKthDerivative(budy, "l");	    
+		astr = genNodeKthDerivative(var,  "l");	    
+		fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp2, ctmp, %s);\n", bstr);
+		fprintf(outfile, "\t\t\t     MultiplyMyFloatA(smp2, ctmp, %s);\n", astr);
+		fprintf(outfile, "\t\t\t     AddMyFloatA(tmp3, tmp, tmp2);\n");
+		fprintf(outfile, "\t\t\t     AddMyFloatA(smp3, smp, smp2);\n");
+		fprintf(outfile, "\t\t\t     AssignMyFloat(tmp, tmp3);\n");
+		fprintf(outfile, "\t\t\t     AssignMyFloat(smp, smp3);\n");
+		fprintf(outfile, "\t\t\t }\n");
+		fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, smp, oneOverN[k]);\n", genVarLvalueKth(budy, "k"));
+		fprintf(outfile, "\t\t\t NegateMyFloatA(smp,  tmp);\n");
+		fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, smp, oneOverN[k]);\n", name1);
+		fprintf(outfile, "\t\t }\n");
+	      }
+	  }
+	else if(!strcmp(fname, "exp"))
+	  {
+	    carg = linearTime(right, &dflag, &mflag);
+	    if(carg)
+	      {
+		fprintf(outfile, "\t\t { /* call exp */\n");
+		if(carg == int_one_node)
+		  {
+		    if(mflag == 0) /* t+cst */
+		      {
+			str = genNodeKthDerivative(var, "k-1");
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, %s, oneOverN[k]);\n", name1, str);
+		      }
+		    else
+		      {
+			fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2;\n");
+                        fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                        fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2);\n");
+                        fprintf(outfile, "\t\t\t }\n");
+
+			str = genNodeKthDerivative(var, "k-1");
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp1, %s, oneOverN[k]);\n", str);
+			fprintf(outfile, "\t\t\t NegateMyFloatA(tmp2,  tmp1);\n");			
+			fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp2);\n", name1);
+		      }
+		  }
+		else
+		  {
+		    char  *tstr = genNodeRvalueF(carg);
+		    if(mflag == 0) /* a*t+cst */
+		      {
+			fprintf(outfile, "\t\t\t static MY_FLOAT tmp1;\n");
+                        fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                        fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);\n");
+                        fprintf(outfile, "\t\t\t }\n");
+			str = genNodeKthDerivative(var, "k-1");
+			if(dflag == 0)fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp1, %s, %s);\n", str, tstr);
+			else fprintf(outfile, "\t\t\t DivideMyFloatA(tmp1, %s, %s);\n", str, tstr);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, tmp1, oneOverN[k]);\n", name1);
+		      }
+		    else /* cst-a*t */
+		      {
+			fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2;\n");
+                        fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                        fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2);\n");
+                        fprintf(outfile, "\t\t\t }\n");
+			str = genNodeKthDerivative(var, "k-1");
+			if(dflag == 0)fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp1, %s, %s);\n", str, tstr);
+			else fprintf(outfile, "\t\t\t DivideMyFloatA(tmp1, %s, %s);\n", str, tstr);
+			fprintf(outfile, "\t\t\t NegateMyFloatA(tmp2,  tmp1);\n");			
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, tmp2, oneOverN[k]);\n", name1);
+		      }
+		  }
+		fprintf(outfile, "\t\t }\n");
+	      }
+	    else
+	      {
+		fprintf(outfile, "\t\t { /* call exp */\n");
+		fprintf(outfile, "\t\t\t MY_FLOAT tmp1, tmp2, tmp3, tmp;\n");
+                fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2);\n");
+                fprintf(outfile, "\t\t\t  InitMyFloat(tmp3);InitMyFloat(tmp);\n");
+                fprintf(outfile, "\t\t\t }\n");
+
+		fprintf(outfile, "\t\t\t AssignMyFloat(tmp,  MyFloatZERO);\n");
+		fprintf(outfile, "\t\t\t for(l=1; l<=k; l++) {\n");
+		str = genNodeKthDerivative(var, "k-l");
+		rstr = genNodeKthDerivative(right, "l");	    
+		fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp1, %s,%s);\n", str, rstr);
+		fprintf(outfile, "\t\t\t     MakeMyFloatA(tmp3, l);\n");            
+		fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp2, tmp1, tmp3);\n");
+		fprintf(outfile, "\t\t\t     AddMyFloatA(tmp, tmp, tmp2);\n");
+		fprintf(outfile, "\t\t\t }\n");
+		fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, tmp, oneOverN[k]);\n", name1);
+		fprintf(outfile, "\t\t }\n");
+	      }
+	  }
+	else if(!strcmp(fname, "log"))
+	  {
+	    fprintf(outfile, "\t\t { /* call log (natural log)*/\n");
+	    fprintf(outfile, "\t\t\t static MY_FLOAT tmp, tmp1, tmpm, tmpn, tmp2, tmp3;\n");
+            fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+            fprintf(outfile, "\t\t\t  InitMyFloat(tmp);InitMyFloat(tmp1);InitMyFloat(tmpm);\n");
+            fprintf(outfile, "\t\t\t  InitMyFloat(tmpn);InitMyFloat(tmp2);InitMyFloat(tmp3);\n");
+            fprintf(outfile, "\t\t\t }\n");
+           
+
+	    fprintf(outfile, "\t\t\t AssignMyFloat(tmp,  MyFloatZERO);\n");
+	    fprintf(outfile, "\t\t\t for(l=1; l<k; l++) {\n");
+	    str = genNodeKthDerivative(var, "l");
+	    rstr = genNodeKthDerivative(right, "k-l");	    	    	
+            fprintf(outfile, "\t\t\t     MakeMyFloatA(tmpm, l);\n");
+	    fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp2, %s,%s);\n", rstr, str);
+	    fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp1, tmp2,tmpm);\n");
+	    fprintf(outfile, "\t\t\t     AddMyFloatA(tmp2, tmp, tmp1);\n");
+	    fprintf(outfile, "\t\t\t     AssignMyFloat(tmp, tmp2);\n");
+	    fprintf(outfile, "\t\t\t }\n");
+	    rstr = genNodeKthDerivative(right, "k");	    	
+            fprintf(outfile, "\t\t\t MakeMyFloatA(tmp2, k);\n");
+	    fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmpn, %s,tmp2);\n",rstr);
+	    fprintf(outfile, "\t\t\t SubstractMyFloatA(tmp3, tmpn, tmp);\n");
+	    fprintf(outfile, "\t\t\t AssignMyFloat(tmp, tmp3);\n");
+	    rightStr = genNodeRvalueF(right);
+	    fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmpn, %s,tmp2);\n",rightStr);
+	    fprintf(outfile, "\t\t\t DivideMyFloatA(%s, tmp, tmpn);\n", name1);
+	    fprintf(outfile, "\t\t }\n");
+	  }
+	else if(!strcmp(fname, "sqrt"))
+	  {
+	    fprintf(outfile, "\t\t { /* call sqrt */\n");
+	    fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2, tmp3, tmp;\n");
+            fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+            fprintf(outfile, "\t\t\t  InitMyFloat(tmp);InitMyFloat(tmp1);InitMyFloat(tmp2);\n");
+            fprintf(outfile, "\t\t\t  InitMyFloat(tmp3);\n");
+            fprintf(outfile, "\t\t\t }\n");
+
+	    rstr = genNodeKthDerivative(right, "k");	    	    
+	    fprintf(outfile, "\t\t\t MakeMyFloatA(tmp3,  k);\n");
+	    fprintf(outfile, "\t\t\t AssignMyFloat(tmp,  %s);\n", rstr);
+	    fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp,  %s, tmp3);\n", rstr);
+	    fprintf(outfile, "\t\t\t for(l=1; l< k; l++) {\n");
+	    str = genNodeKthDerivative(var, "k-l");
+	    rstr = genNodeKthDerivative(var, "l");	    
+	    fprintf(outfile, "\t\t\t     MakeMyFloatA(tmp3,  l);\n");
+	    fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp1, %s,%s);\n", str, rstr);
+	    fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp2, tmp1, tmp3);\n");
+	    fprintf(outfile, "\t\t\t     SubstractMyFloatA(tmp3, tmp, tmp2);\n");
+	    fprintf(outfile, "\t\t\t     AssignMyFloat(tmp, tmp3);\n");
+	    fprintf(outfile, "\t\t\t }\n");
+	    str = genNodeRvalueF(var);
+	    fprintf(outfile, "\t\t\t MakeMyFloatA(tmp3,  k);\n");
+	    fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp1, %s, tmp3);\n", str);
+	    fprintf(outfile, "\t\t\t AddMyFloatA(tmp3, tmp1, tmp1);\n");
+	    fprintf(outfile, "\t\t\t DivideMyFloatA(%s, tmp, tmp3);\n", name1);
+	    fprintf(outfile, "\t\t }\n");
+	  }
+	else if(!strcmp(fname, "sinh") || !strcmp(fname, "cosh"))
+	  {
+	    Node budy = NODE_BUDY(var);
+	    NODE_DERI_DONE(var) = 1;
+	    NODE_DERI_DONE(budy) = 1;
+	    carg = linearTime(right, &dflag, &mflag);
+	    if(carg)
+	      {
+		fprintf(outfile, "\t\t { /* call sinh cosh */\n");
+		if(carg == int_one_node)
+		  {
+		    if(mflag == 0) /* t+cst */
+		      {
+			bstr = genNodeKthDerivative(budy, "k-1");	    
+			astr = genNodeKthDerivative(var,  "k-1");	    
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, %s, oneOverN[k]);\n", name1, bstr);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, %s, oneOverN[k]);\n",
+				genVarLvalueKth(budy, "k"), astr);
+		      }
+		    else  /* cst-t */
+		      {
+			fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2;\n");
+                        fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                        fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2);\n");
+                        fprintf(outfile, "\t\t\t }\n");
+
+			bstr = genNodeKthDerivative(budy, "k-1");	    
+			astr = genNodeKthDerivative(var,  "k-1");	    
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp1, %s, oneOverN[k]);\n", bstr);
+			fprintf(outfile, "\t\t\t NegateMyFloatA(tmp2,  tmp1);\n");   
+			fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp2);\n",name1);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp1, %s, oneOverN[k]);\n",astr);
+			fprintf(outfile, "\t\t\t NegateMyFloatA(tmp2,  tmp1);\n");  
+			fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp2);\n", genVarLvalueKth(budy, "k"));
+		      }
+		  }
+		else 
+		  {
+		    char  *tstr = genNodeRvalueF(carg);
+		    if(mflag == 0) /* a*t+cst */
+		      {
+			fprintf(outfile, "\t\t\t static MY_FLOAT tmp;\n");		    
+                        fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                        fprintf(outfile, "\t\t\t  InitMyFloat(tmp);\n");
+                        fprintf(outfile, "\t\t\t }\n");
+
+			bstr = genNodeKthDerivative(budy, "k-1");	    
+			astr = genNodeKthDerivative(var,  "k-1");	
+			if(dflag == 0)fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp, oneOverN[k], %s);\n", tstr);
+			else fprintf(outfile, "\t\t\t DivideMyFloatA(tmp, oneOverN[k], %s);\n", tstr);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, tmp, %s);\n", name1, bstr);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, tmp, %s);\n", 
+				genVarLvalueKth(budy, "k"), astr);
+		      }
+		    else
+		      {
+			fprintf(outfile, "\t\t\t static MY_FLOAT tmp, tmp1, tmp2;\n");		    
+                        fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                        fprintf(outfile, "\t\t\t  InitMyFloat(tmp);InitMyFloat(tmp1);InitMyFloat(tmp2);\n");
+                        fprintf(outfile, "\t\t\t }\n");
+			bstr = genNodeKthDerivative(budy, "k-1");	    
+			astr = genNodeKthDerivative(var,  "k-1");	
+			if(dflag == 0)fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp, oneOverN[k], %s);\n", tstr);
+			else fprintf(outfile, "\t\t\t DivideMyFloatA(tmp, oneOverN[k], %s);\n", tstr);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp2, tmp, %s);\n", bstr);
+			fprintf(outfile, "\t\t\t NegateMyFloatA(tmp1,  tmp2);\n");  
+			fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp1);\n", name1);
+			fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp1, tmp, %s);\n", astr);
+			fprintf(outfile, "\t\t\t NegateMyFloatA(tmp1,  tmp2);\n");  
+			fprintf(outfile, "\t\t\t AssignMyFloat(%s, tmp1);\n", genVarLvalueKth(budy, "k"));  
+		      }
+		  }
+		fprintf(outfile, "\t\t }\n");		
+	      }
+	    else
+	      {
+		fprintf(outfile, "\t\t { /* call sinh or cosh */\n");
+		fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2, tmp3, tmp, ctmp;\n");
+		fprintf(outfile, "\t\t\t static MY_FLOAT smp1, smp2, smp3, smp;\n");
+                fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+                fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2);InitMyFloat(tmp3);\n");
+                fprintf(outfile, "\t\t\t  InitMyFloat(tmp);InitMyFloat(ctmp);InitMyFloat(smp1);\n");
+                fprintf(outfile, "\t\t\t  InitMyFloat(smp2);InitMyFloat(smp3);InitMyFloat(smp);\n");
+                fprintf(outfile, "\t\t\t }\n");
+		fprintf(outfile, "\t\t\t AssignMyFloat(tmp,  MyFloatZERO);\n");
+		fprintf(outfile, "\t\t\t AssignMyFloat(smp,  MyFloatZERO);\n");
+		fprintf(outfile, "\t\t\t for(l=1; l<=k; l++) {\n");
+		fprintf(outfile, "\t\t\t     MakeMyFloatA(tmp1, l);\n");
+		rstr = genNodeKthDerivative(right, "l");	    	    
+		fprintf(outfile, "\t\t\t     MultiplyMyFloatA(ctmp, tmp1, %s);\n", rstr);
+		bstr = genNodeKthDerivative(budy, "k-l");
+		astr = genNodeKthDerivative(var, "k-l");
+		fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp2, ctmp, %s);\n", bstr);
+		fprintf(outfile, "\t\t\t     MultiplyMyFloatA(smp2, ctmp, %s);\n", astr);
+		fprintf(outfile, "\t\t\t     AddMyFloatA(tmp3, tmp, tmp2);\n");
+		fprintf(outfile, "\t\t\t     AssignMyFloat(tmp, tmp3);\n");
+		fprintf(outfile, "\t\t\t     AddMyFloatA(smp3, smp, smp2);\n");
+		fprintf(outfile, "\t\t\t     AssignMyFloat(smp, smp3);\n");
+		fprintf(outfile, "\t\t\t }\n");
+		fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, tmp, oneOverN[k]);\n", name1);
+		fprintf(outfile, "\t\t\t MultiplyMyFloatA(%s, smp, oneOverN[k]);\n", genVarLvalueKth(budy, "k"));
+		fprintf(outfile, "\t\t }\n");
+	      }
+	  }
+	else if(!strcmp(fname, "tan") || !strcmp(fname, "tanh") || !strcmp(fname, "atan") || !strcmp(fname, "arctan"))
+	  {
+	    Node budy = NODE_BUDY(var);
+	    fprintf(outfile, "\t\t { /* call tan or tanh or atan */\n");
+	    fprintf(outfile, "\t\t\t static MY_FLOAT tmp1, tmp2, tmp3, tmp4, tmp;\n");
+            fprintf(outfile, "\t\t\t if(initialized==0) {\n");
+            fprintf(outfile, "\t\t\t  InitMyFloat(tmp1);InitMyFloat(tmp2);InitMyFloat(tmp3);\n");
+            fprintf(outfile, "\t\t\t  InitMyFloat(tmp4);InitMyFloat(tmp);\n");
+            fprintf(outfile, "\t\t\t }\n");
+
+	    rstr = genNodeKthDerivative(right, "k");	    	    
+	    fprintf(outfile, "\t\t\t AssignMyFloat(tmp2,  %s);\n", rstr);
+	    fprintf(outfile, "\t\t\t MakeMyFloatA(tmp4, k);\n");
+	    fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp,  tmp2, tmp4);\n");
+	    fprintf(outfile, "\t\t\t for(l=1; l<k; l++) {\n");
+	    fprintf(outfile, "\t\t\t     MakeMyFloatA(tmp1, l);\n");
+	    bstr = genNodeKthDerivative(budy, "k-l");
+	    str = genNodeKthDerivative(var, "l");	    	    
+	    fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp2, %s,%s);\n", bstr, str);
+	    fprintf(outfile, "\t\t\t     MultiplyMyFloatA(tmp3, tmp1, tmp2);\n");
+	    fprintf(outfile, "\t\t\t     SubstractMyFloatA(tmp4, tmp, tmp3);\n");
+	    fprintf(outfile, "\t\t\t     AssignMyFloat(tmp, tmp4);\n");
+	    fprintf(outfile, "\t\t\t }\n");
+	    bstr = genNodeRvalueF(budy);
+	    fprintf(outfile, "\t\t\t MakeMyFloatA(tmp4, k);\n");
+	    fprintf(outfile, "\t\t\t MultiplyMyFloatA(tmp1, %s, tmp4);\n", bstr);
+	    fprintf(outfile, "\t\t\t DivideMyFloatA(%s, tmp, tmp1);\n", name1);
+	    fprintf(outfile, "\t\t }\n");
+	  }
+      }
+    break;      
+    case IF_ELSE_EXPR:
+      fprintf(outfile, "\t\t /* if_else: %s=%s */\n", NODE_NAME(var), NODE_INFO(def));
+      {
+	Node cond = IF_ELSE_COND(var);
+	char *boolstr = genNodeRvalueI(cond);
+	leftStr = genNodeKthDerivative(left, "k");
+	rightStr = genNodeKthDerivative(right, "k");	    	    
+	fprintf(outfile, "\t\t if(%s) {\n", boolstr);
+	fprintf(outfile, "\t\t\t AssignMyFloat(%s,%s);\n\t\t } else {\n",name1,leftStr);
+	fprintf(outfile, "\t\t\t AssignMyFloat(%s,%s);\n\t\t }\n",name1,rightStr); 
+      }
+    break;    
+    default:
+      fprintf(stderr, "Internal error: don't know how to differentiate %s=%s\n",
+              NODE_GIVEN_NAME(var)? NODE_GIVEN_NAME(var) : NODE_NAME(var), 
+              NODE_GIVEN_NAME(def)? NODE_GIVEN_NAME(def): NODE_INFO(def));
+      break;
+    }
+}
+/*************************************************************************************************/
+static char *genNodeKthDerivative(Node node, char *kth)
+{
+  static char str[2048];
+  static char *outs[16]={ str, str+128, str+256, str+384, str+512, str+640, str+768, str+896,
+			  str+1024, str+1152, str+1280,str+1408,str+1536,str+1664,str+1792,str+1920};
+  static int  oidx = 0;
+  char   *out = outs[oidx];
+  out[0] = '\0';
+  oidx++; if(oidx==16) oidx = 0;
+
+  if(node)
+    {
+      if(NODE_IS_CST(node)) return("MyFloatZERO");
+      else
+	{
+	  int code = NODE_CODE(node);
+	  switch(code)
+	    {
+	    case ID_NODE:
+	      if(VAR_IS_LOCAL(node) || VAR_IS_GLOBAL(node))
+		return(genVarLvalueKth(node, kth));
+	      else 
+		{
+		  fprintf(stderr, "Internal Error: don't know the derivative of '%s'.\n", 
+                          NODE_GIVEN_NAME(node)?NODE_GIVEN_NAME(node): NODE_NAME(node));
+		  exit(51);
+		}
+	      break;
+	    default:
+	      fprintf(stderr, "Internal Error: don't know the derivative of '%s' (%d)\n", 
+                      NODE_GIVEN_NAME(node)? NODE_GIVEN_NAME(node): NODE_NAME(node),code);
+	      exit(52);
+	      break;
+	    }
+	}
+    }
+  return(NULL);
+}
+/*************************************************************************************************/

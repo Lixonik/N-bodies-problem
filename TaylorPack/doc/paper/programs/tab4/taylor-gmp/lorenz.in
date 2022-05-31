@@ -1,0 +1,9 @@
+/* ODE specification:  lorenz */
+
+S = 10.0;
+R = 28.0;
+B = 8.0/3.0;
+
+diff(x,t) = S*(y-x);
+diff(y,t) = x*(R-z)-y;
+diff(z,t) = x*y-B*z;

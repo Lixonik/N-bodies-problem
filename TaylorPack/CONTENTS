@@ -1,0 +1,17 @@
+
+Contents of this package
+========================
+
+src:  contains the source for the 'taylor' translator.
+
+doc:  documentation
+
+dd:   header files of Keith Briggs' doubledouble library.
+
+gmp:  Pointers to the Gnu Multiple Precision library.
+
+test:     some examples, use standard double precision
+dtest:    same tests as in test, use doubledouble 
+gtest     same tests, use GMP
+qtest     same tests, use quad-double lib.
+

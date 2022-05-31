@@ -1,0 +1,70 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<!--Converted with LaTeX2HTML 96.1 (Feb 5, 1996) by Nikos Drakos (nikos@cbl.leeds.ac.uk), CBLU, University of Leeds -->
+<HTML>
+<HEAD>
+<TITLE>Automatic Generation of Taylor Coefficients</TITLE>
+<META NAME="description" CONTENT="Automatic Generation of Taylor Coefficients">
+<META NAME="keywords" CONTENT="manual">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+<LINK REL=STYLESHEET HREF="manual.css">
+</HEAD>
+<BODY LANG="EN">
+ <A NAME="tex2html238" HREF="node22.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html236" HREF="node19.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html232" HREF="node20.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html239" HREF="node22.html">References</A>
+<B>Up:</B> <A NAME="tex2html237" HREF="node19.html">Appendix: The Taylor method</A>
+<B> Previous:</B> <A NAME="tex2html233" HREF="node20.html">Van der Pol's Equation</A>
+<BR> <P>
+<H2><A NAME="SECTION00072000000000000000">Automatic Generation of Taylor Coefficients</A></H2>
+<P>
+The algorithm for computing Taylor coefficients
+recursively has been known since the 60s and
+is commonly referenced as <I>automatic differentiation</I>
+in the literature. It has been employed in software packages such
+as ATOFMT.
+A detailed description of the algorithm
+can be found in [<A HREF="node22.html#JZ">1</A>] (see more references therein).
+Here we give a brief account of the idea involved.
+<P>
+Let <I>f</I>(<I>t</I>) be an analytic function and denote the <I>i</I>th
+Taylor coefficient at  <IMG WIDTH=11 HEIGHT=21 ALIGN=MIDDLE ALT="tex2html_wrap_inline607" SRC="img15.gif"  >  by
+<P> <IMG WIDTH=500 HEIGHT=35 ALIGN=BOTTOM ALT="eqnarray321" SRC="img21.gif"  > <P>
+where  <IMG WIDTH=30 HEIGHT=27 ALIGN=MIDDLE ALT="tex2html_wrap_inline625" SRC="img22.gif"  >  is the <I>i</I>th derivative of <I>f</I> at  <IMG WIDTH=11 HEIGHT=21 ALIGN=MIDDLE ALT="tex2html_wrap_inline607" SRC="img15.gif"  > . 
+The Taylor expansion of <I>f</I>(<I>t</I>) around  <IMG WIDTH=11 HEIGHT=21 ALIGN=MIDDLE ALT="tex2html_wrap_inline607" SRC="img15.gif"  >  can be
+conveniently expressed as
+<P> <IMG WIDTH=500 HEIGHT=17 ALIGN=BOTTOM ALT="eqnarray326" SRC="img23.gif"  > <P>
+<P>
+Let  <IMG WIDTH=54 HEIGHT=24 ALIGN=MIDDLE ALT="tex2html_wrap_inline637" SRC="img24.gif"  >  be the <I>i</I>th Taylor coefficients of <I>p</I>, <I>q</I> at
+ <IMG WIDTH=11 HEIGHT=21 ALIGN=MIDDLE ALT="tex2html_wrap_inline607" SRC="img15.gif"  > . The Taylor coefficients for  <IMG WIDTH=34 HEIGHT=21 ALIGN=MIDDLE ALT="tex2html_wrap_inline645" SRC="img25.gif"  > , <I>pq</I> and <I>p</I>/<I>q</I>
+can be obtained recursively using the following rules.
+<P>
+<P><A NAME="eqrecursivea">&#160;</A> <IMG WIDTH=500 HEIGHT=135 ALIGN=BOTTOM ALT="eqnarray328" SRC="img26.gif"  > <P>
+To compute the Taylor coefficients for (<A HREF="node19.html#eqivp">1</A>), one
+first decomposes the right hand side of the differential
+equation into a series of simple expressions by introducing
+new variables, such that  each expression involves
+only one arithmetic operation. These expressions are
+commonly called <I>code lists</I>. One then uses the
+recursive relations (<A HREF="node21.html#eqrecursivea">5</A>) and the initial
+values to generate the Taylor coefficients for all the
+the variables.
+<P>
+For example,
+the Van der Pol equation (<A HREF="node20.html#eqvanderpol">3</A>) can be
+decomposed as
+<P> <IMG WIDTH=500 HEIGHT=53 ALIGN=BOTTOM ALT="eqnarray344" SRC="img27.gif"  > <P>
+Using the initial value  <IMG WIDTH=104 HEIGHT=24 ALIGN=MIDDLE ALT="tex2html_wrap_inline651" SRC="img28.gif"  > , the Taylor coefficients
+of all  <IMG WIDTH=13 HEIGHT=15 ALIGN=MIDDLE ALT="tex2html_wrap_inline653" SRC="img29.gif"  > s can be easily generated using (<A HREF="node21.html#eqrecursivea">5</A>).
+<P>
+The Taylor coefficients for elementary functions can also be
+generated recursively. Some of the rules are:
+<P> <IMG WIDTH=504 HEIGHT=45 ALIGN=BOTTOM ALT="eqnarray347" SRC="img30.gif"  > <P>
+<P> <IMG WIDTH=500 HEIGHT=97 ALIGN=BOTTOM ALT="eqnarray355" SRC="img31.gif"  > <P>
+<P> <IMG WIDTH=500 HEIGHT=96 ALIGN=BOTTOM ALT="eqnarray366" SRC="img32.gif"  > <P>
+<P> <IMG WIDTH=500 HEIGHT=45 ALIGN=BOTTOM ALT="eqnarray378" SRC="img33.gif"  > <P><BR> <HR>
+<P><ADDRESS>
+<I>Maorong Zou <BR>
+Tue Nov 13 09:42:48 CST 2001</I>
+</ADDRESS>
+</BODY>
+</HTML>

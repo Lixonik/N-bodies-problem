@@ -1,0 +1,6 @@
+set xtics 0,250000,1000000
+plot '128/36.ham' u 1:2 t '1.e-36' w l, '128/37.ham' u 1:2 t '1.e-37' w l, '128/38.ham' u 1:2 t '1.e-38' w l, '128/39.ham' u 1:2 t '1.e-39' w l, '128/40.ham' u 1:2 t '1.e-40' w l, '128/41.ham' u 1:2 t '1.e-41' w l
+set term po eps 20
+set output 'drift-gmp128.eps'
+replot
+set term x11

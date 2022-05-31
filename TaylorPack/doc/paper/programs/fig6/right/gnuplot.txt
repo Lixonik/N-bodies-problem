@@ -1,0 +1,6 @@
+set xtics 0,250000,1000000
+f=1.e64
+plot '61/ham.res' u 1:(f*($2)) t '1.e-61' w l, '62/ham.res' u 1:(f*($2)) t '1.e-62' w l, '63/ham.res' u 1:(f*($2)) t '1.e-63' w l, '64/ham.res' u 1:(f*($2)) t '1.e-64' w l, '65/ham.res' u 1:(f*($2)) t '1.e-65' w l, '66/ham.res' u 1:(f*($2)) t '1.e-66' w l
+set term po eps 20
+set output 'driftqd2.eps'
+replot

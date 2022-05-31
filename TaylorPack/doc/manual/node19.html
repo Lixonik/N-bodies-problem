@@ -1,0 +1,44 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<!--Converted with LaTeX2HTML 96.1 (Feb 5, 1996) by Nikos Drakos (nikos@cbl.leeds.ac.uk), CBLU, University of Leeds -->
+<HTML>
+<HEAD>
+<TITLE>Appendix: The Taylor method</TITLE>
+<META NAME="description" CONTENT="Appendix: The Taylor method">
+<META NAME="keywords" CONTENT="manual">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+<LINK REL=STYLESHEET HREF="manual.css">
+</HEAD>
+<BODY LANG="EN">
+ <A NAME="tex2html220" HREF="node20.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html218" HREF="manual.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html212" HREF="node18.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html221" HREF="node20.html">Van der Pol's Equation</A>
+<B>Up:</B> <A NAME="tex2html219" HREF="manual.html">Taylor User's Manual </A>
+<B> Previous:</B> <A NAME="tex2html213" HREF="node18.html">Appendix A: Taylor Grammar</A>
+<BR> <P>
+<H1><A NAME="SECTION00070000000000000000">Appendix: The Taylor method</A></H1>
+<P>
+Taylor method is one of the best known one step method for solving
+ordinary differential equations numerically. The idea is to
+advance the solution using a truncated Taylor expansion of
+the variables about the current solution.
+Let
+<P><A NAME="eqivp">&#160;</A> <IMG WIDTH=500 HEIGHT=17 ALIGN=BOTTOM ALT="eqnarray270" SRC="img12.gif"  > <P>
+be an initial value problem and let <I>h</I> be the integration
+step. To find  <IMG WIDTH=62 HEIGHT=24 ALIGN=MIDDLE ALT="tex2html_wrap_inline603" SRC="img13.gif"  > , we expand  <IMG WIDTH=9 HEIGHT=14 ALIGN=MIDDLE ALT="tex2html_wrap_inline605" SRC="img14.gif"  >  around
+ <IMG WIDTH=11 HEIGHT=21 ALIGN=MIDDLE ALT="tex2html_wrap_inline607" SRC="img15.gif"  >  and obtain
+<P><A NAME="eqtaylorseries">&#160;</A> <IMG WIDTH=507 HEIGHT=33 ALIGN=BOTTOM ALT="equation279" SRC="img16.gif"  > <P>
+A numeric approximation of  <IMG WIDTH=62 HEIGHT=24 ALIGN=MIDDLE ALT="tex2html_wrap_inline603" SRC="img13.gif"  > 
+is obtained by truncating (<A HREF="node19.html#eqtaylorseries">2</A>)
+at a pre-determined order.
+<P>
+The main problem connected with the Taylor method
+is the need to compute higher derivatives 
+ <IMG WIDTH=108 HEIGHT=30 ALIGN=MIDDLE ALT="tex2html_wrap_inline611" SRC="img17.gif"  > .
+<P>
+<BR> <HR>
+<P><ADDRESS>
+<I>Maorong Zou <BR>
+Tue Nov 13 09:42:48 CST 2001</I>
+</ADDRESS>
+</BODY>
+</HTML>

@@ -1,0 +1,281 @@
+\batchmode
+\documentclass{article}
+\makeatletter
+\title{{\bf Taylor} User's Manual }
+\author{\`Angel Jorba {\tt <angel@maia.ub.es>} \\ 
+Maorong Zou {\tt <mzou@math.utexas.edu>}}
+
+\makeatother
+\newenvironment{tex2html_wrap}{}{}
+\newwrite\lthtmlwrite
+\def\lthtmltypeout#1{{\let\protect\string\immediate\write\lthtmlwrite{#1}}}%
+\newbox\sizebox
+\begin{document}
+\pagestyle{empty}
+\stepcounter{section}
+\stepcounter{section}
+\stepcounter{section}
+\stepcounter{section}
+\stepcounter{subsection}
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$\sin$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline573: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$\cos$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline575: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$\tan$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline577: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$\arctan$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline579: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$\sinh$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline581: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$\cosh$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline583: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$\tanh$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline585: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$\exp$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline587: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$\log$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline589: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+\stepcounter{subsection}
+\stepcounter{subsection}
+\stepcounter{subsubsection}
+\stepcounter{subsubsection}
+\stepcounter{section}
+\stepcounter{subsection}
+\stepcounter{subsection}
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$(x+y)^{-{3\over 2}}$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline591: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+\stepcounter{subsection}
+\stepcounter{subsubsection}
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$\ge 2$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline599: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+\stepcounter{subsubsection}
+\stepcounter{subsubsection}
+\stepcounter{subsection}
+\stepcounter{section}
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \begin{eqnarray}\label{eq:ivp}
+{\bf y}' = f(t, {\bf y})\;\;\;\;\; {\bf y}(t_0) = {\bf y}_0
+\end{eqnarray}
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{${\bf y}(t_0+h)$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline603: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{${\bf y}$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline605: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$t_0$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline607: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \begin{equation}\label{eq:taylorseries}
+{\bf y}(t_0 +h) = {\bf y}(t_0) + {\bf y}'(t_0) h + {1\over
+{2!}} {\bf y}''(t_0) h^2 + \cdots + {1 \over {k!}}{\bf
+y}^{(k)}(t_0) h^k + \cdots
+\end{equation}
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{${\bf y}'',{\bf y}''',\cdots, {\bf y}^{(k)}$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline611: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \begin{eqnarray}\label{eq:vanderpol}
+x'&=&y\cr
+y'&=&(1-x^2)y-x
+\end{eqnarray}
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \begin{eqnarray}x''&=& (1-x^2)y-x\cr
+y''&=& x^3 -x  - 2 x y^2 + (x^4 - 2 x^2)y\cr
+x'''&=& x^3 -x  - 2 x y^2 + (x^4 - 2 x^2)y\cr
+y'''&=& 2x^3-x^5 + (-1+ 5x^2+3x^4-x^6)y +(-8x+4x^3)y^2 -2y^3
+\end{eqnarray}
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \begin{eqnarray*}\left(\matrix{x_{n+1}\cr y_{n+1}}\right) &=&
+\left(\matrix{x_n\cr y_n}\right) +
+\left(\matrix{y_n\cr (1-x_n^2)y_n-x_n}\right) h\cr
+ & & \hspace*{-16mm}
+ +{1\over {2!}} \left(\matrix{(1-x_n^2)y_n-x_n\cr
+   x_n^3-x_n-2x_ny_n^2+(x_n^4-2x_n^2)y_n}\right) h^2 \cr
+ & & \hspace*{-16mm}
+ +{1\over {3!}} \left(\matrix{x_n^3-x_n-2x_ny_n^2+(x_n^4-2x_n^2)y_n\cr
+    2x_n^3-x_n^5+(-1+5x_n^2+3x_n^4-x_n^6)y_n+(-8x_n+4x_n^3)y_n^2-2y_n^3}
+\right) h^3\cr
+\left(\matrix{x_0\cr y_0}\right) &=&
+\left(\matrix{2\cr 0}\right)
+\end{eqnarray*}
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \begin{eqnarray*}(f)_i = {{f^{i}(t_0)} \over {i!}}
+\end{eqnarray*}
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$f^{i}(t)$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline625: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \begin{eqnarray*}f(t_0 +h) = (f)_0 + (f)_1 h + (f)_2 h^2 + \cdots + (f)_n h^n  \cdots
+\end{eqnarray*}
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$(p)_i, (q)_i$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline637: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$p\pm q$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline645: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \begin{eqnarray}\label{eq:recursivea}
+(p\pm q)_i &=& (p)_i \pm (q)_i \cr
+(p q)_i &=& \sum_{r=0}^{i} (p)_r (q)_{i-r} \cr
+\left({p\over q}\right)_i &=& {1\over q}\left\{ 
+(p)_i - \sum_{r=1}^{i} (q)_r \left({p\over q}\right)_{i-r}\right\} \cr
+\end{eqnarray}
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \begin{eqnarray*}& & u_1 = x,\;\;  u_2 = y,\;\; u_3 = 1,\;\; u_4= u_1 u_1\cr
+& & u_5 = u_3-u_4,\;\; u_6 = u_5 u_2,\;\; u_7= u_6-u_1\cr
+& & u_1' = u_2, \;\; u_2'= u_7
+\end{eqnarray*}
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$(x_0, y_0)=(2, 0)$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline651: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \setbox\sizebox=\hbox{$u_i$}\lthtmltypeout{latex2htmlSize :tex2html_wrap_inline653: \the\ht\sizebox::\the\dp\sizebox.}\box\sizebox
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \begin{eqnarray*}(p^a)_i &=& {1 \over p} \sum_{r=0}^{i-1}\left(
+a - { {r(a+1)\over i}}\right)(p)_{i-r}(p^a)_r\;\;\; \mbox{
+where $a$ is a real constant} 
+\end{eqnarray*}
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \begin{eqnarray*}(e^p)_i &=& \sum_{r=0}^{i-1} \left(1-{r\over i}\right)
+(e^p)_r (p)_{i-r}\cr
+(\ln p)_i &=& {1\over {p}} \left\{ (p)_i - \sum_{r=1}^{i-1}
+\left(1 - {r\over i}\right)(p)_r(\ln p)_{i-r}\right\}
+\end{eqnarray*}
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \begin{eqnarray*}(\sin p)_i &=& \sum_{r=0}^{i-1}\left({{r+1}\over
+i}\right)(\cos p)_{i-1-r} (p)_{r+1}\cr
+(\cos p)_i &=& -\sum_{r=0}^{i-1}\left({{r+1}\over
+i}\right)(\sin p)_{i-1-r} (p)_{r+1}\cr
+\end{eqnarray*}
+\par}
+
+{\newpage
+\clearpage
+\thispagestyle{empty}
+\samepage \begin{eqnarray*}(\tan^{-1} p)_i &=& \sum_{r=0}^{i-1}\left(1 - {r\over i}\right)
+\left( {1 \over {1+p^2}}\right)_r (p)_{k-r}
+\end{eqnarray*}
+\par}
+
+\stepcounter{section}
+
+\end{document}

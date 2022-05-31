@@ -1,0 +1,63 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<!--Converted with LaTeX2HTML 96.1 (Feb 5, 1996) by Nikos Drakos (nikos@cbl.leeds.ac.uk), CBLU, University of Leeds -->
+<HTML>
+<HEAD>
+<TITLE>Installing Taylor</TITLE>
+<META NAME="description" CONTENT="Installing Taylor">
+<META NAME="keywords" CONTENT="manual">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+<LINK REL=STYLESHEET HREF="manual.css">
+</HEAD>
+<BODY LANG="EN">
+ <A NAME="tex2html51" HREF="node4.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html49" HREF="manual.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html43" HREF="node2.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html52" HREF="node4.html">Running Taylor</A>
+<B>Up:</B> <A NAME="tex2html50" HREF="manual.html">Taylor User's Manual </A>
+<B> Previous:</B> <A NAME="tex2html44" HREF="node2.html">Obtaining Taylor</A>
+<BR> <P>
+<H1><A NAME="SECTION00030000000000000000">Installing Taylor</A></H1>
+<P>
+<B>Taylor</B> runs only on a Unix system. It has been tested
+under Linux, SunOS and Solaris. It should compile and run
+on other variant of unices.
+<P>
+After downloading the distribution <TT>taylor-x.y.z.tgz</TT>,
+where <TT>x.y.z</TT> is the version number,
+unpack the archive using the command
+<P>
+<TT>tar xvzf taylor-x.y.z.tgz</TT>
+<P>
+or, if your version of <TT>tar</TT> does not handle compressed files, you
+can also use
+<P>
+<TT>gzip -dc taylor-x.y.z.tgz | tar xvf - </TT>
+<P>
+This will create a directory <TT>Taylor-x.y</TT>.
+Change to this directory.
+<P>
+Now, to compile <B>taylor</B>, run <TT>make</TT>.
+It will produce the executable <TT>taylor</TT>
+in the current directory.  You need an ANSI 
+C compiler and <TT>lex/yacc</TT> parser generator
+to compile <B>taylor</B>. Using <TT>gcc</TT> and
+<TT>flex/bison</TT> is highly recommended.
+<P>
+To install <B>taylor</B>, simply copy the executable
+<B>taylor</B> and the manual page <TT>src/taylor.1</TT>
+to their destination directories. You can put the binary
+in one of your directories or, if you have the right permissions,
+in a system directory,
+<P>
+<TT>cp taylor /usr/local/bin/taylor</TT>
+<P>
+In this case, you may also want to install the man page,
+<P>
+<TT>cp src/taylor.1 /usr/local/man/man1/taylor.1</TT>
+<P>
+<BR> <HR>
+<P><ADDRESS>
+<I>Maorong Zou <BR>
+Tue Nov 13 09:42:48 CST 2001</I>
+</ADDRESS>
+</BODY>
+</HTML>

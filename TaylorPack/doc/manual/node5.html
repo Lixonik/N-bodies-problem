@@ -1,0 +1,55 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<!--Converted with LaTeX2HTML 96.1 (Feb 5, 1996) by Nikos Drakos (nikos@cbl.leeds.ac.uk), CBLU, University of Leeds -->
+<HTML>
+<HEAD>
+<TITLE>Input Syntax</TITLE>
+<META NAME="description" CONTENT="Input Syntax">
+<META NAME="keywords" CONTENT="manual">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+<LINK REL=STYLESHEET HREF="manual.css">
+</HEAD>
+<BODY LANG="EN">
+ <A NAME="tex2html76" HREF="node6.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html74" HREF="node4.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html68" HREF="node4.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html77" HREF="node6.html">Overall</A>
+<B>Up:</B> <A NAME="tex2html75" HREF="node4.html">Running Taylor</A>
+<B> Previous:</B> <A NAME="tex2html69" HREF="node4.html">Running Taylor</A>
+<BR> <P>
+<H2><A NAME="SECTION00041000000000000000">Input Syntax</A></H2>
+<A NAME="secis">&#160;</A>
+To use <B>taylor</B>, the first order of business
+is to prepare an input ASCII file with the system of ODEs.
+Input to <B>taylor</B> consists of statements of the form
+<PRE>      id = expr;
+      diff(var, tvar) = expr;</PRE>
+where <TT>tvar</TT> is the time variable and <TT>expr</TT> 
+is a valid mathematical expression made from
+numbers, the time variable, the state variables,
+elementary functions  <IMG WIDTH=19 HEIGHT=11 ALIGN=BOTTOM ALT="tex2html_wrap_inline573" SRC="img1.gif"  > ,  <IMG WIDTH=20 HEIGHT=7 ALIGN=BOTTOM ALT="tex2html_wrap_inline575" SRC="img2.gif"  > ,  <IMG WIDTH=23 HEIGHT=9 ALIGN=BOTTOM ALT="tex2html_wrap_inline577" SRC="img3.gif"  > ,  <IMG WIDTH=43 HEIGHT=9 ALIGN=BOTTOM ALT="tex2html_wrap_inline579" SRC="img4.gif"  > , 
+ <IMG WIDTH=28 HEIGHT=11 ALIGN=BOTTOM ALT="tex2html_wrap_inline581" SRC="img5.gif"  > ,  <IMG WIDTH=29 HEIGHT=11 ALIGN=BOTTOM ALT="tex2html_wrap_inline583" SRC="img6.gif"  > ,  <IMG WIDTH=32 HEIGHT=11 ALIGN=BOTTOM ALT="tex2html_wrap_inline585" SRC="img7.gif"  > ,
+ <IMG WIDTH=22 HEIGHT=14 ALIGN=MIDDLE ALT="tex2html_wrap_inline587" SRC="img8.gif"  > , and  <IMG WIDTH=20 HEIGHT=22 ALIGN=MIDDLE ALT="tex2html_wrap_inline589" SRC="img9.gif"  > , using the four arithmetic
+operators and function composition. For example
+<PRE>     a = sin(1) + log(1 + exp(-0.5));
+     b = a + cos(0.1);
+     c = a+b;
+     ff = sin(x+t) * exp(-x*x);
+     diff(x,t) = c * ff - tan(t);</PRE>
+are all valid statements.
+<P>
+<B>Taylor</B> also understands <TT>if-else</TT>
+expressions and non-nested sums. For example,
+<B>taylor</B> accepts the following statements:
+<PRE>      ss = sum( i*sin(i * x)+ i *cos(i*t), i=1,10);
+      diff(x,t) = ss;
+      diff(y,t) = if(y&gt;t) {  if(y&gt;0.0) { y } else { 1-y }  }
+                  else    { y+t};</PRE>
+<P>
+The detailed input syntax is given in Appendix A.
+<P>
+<BR> <HR>
+<P><ADDRESS>
+<I>Maorong Zou <BR>
+Tue Nov 13 09:42:48 CST 2001</I>
+</ADDRESS>
+</BODY>
+</HTML>

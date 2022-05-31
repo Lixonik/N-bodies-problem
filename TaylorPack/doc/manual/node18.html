@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<!--Converted with LaTeX2HTML 96.1 (Feb 5, 1996) by Nikos Drakos (nikos@cbl.leeds.ac.uk), CBLU, University of Leeds -->
+<HTML>
+<HEAD>
+<TITLE>Appendix A: Taylor Grammar</TITLE>
+<META NAME="description" CONTENT="Appendix A: Taylor Grammar">
+<META NAME="keywords" CONTENT="manual">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+<LINK REL=STYLESHEET HREF="manual.css">
+</HEAD>
+<BODY LANG="EN">
+ <A NAME="tex2html210" HREF="node19.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html208" HREF="manual.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html202" HREF="node17.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html211" HREF="node19.html">Appendix: The Taylor method</A>
+<B>Up:</B> <A NAME="tex2html209" HREF="manual.html">Taylor User's Manual </A>
+<B> Previous:</B> <A NAME="tex2html203" HREF="node17.html">Write a Driving Routine</A>
+<BR> <P>
+<H1><A NAME="SECTION00060000000000000000">Appendix A: Taylor Grammar</A></H1>
+<P>
+
+<PRE>program:
+                     /* empty */
+                    | stmts ';'
+                    ;
+stmts: 
+                      stmt
+                    | stmts ';' stmt
+                    ;  
+stmt:
+                      derivative
+                    | define
+                    | declare
+                    | control
+                    ;
+
+control:            INITIALV '=' initials
+                    ;
+
+
+initials:          expr
+                   | initials ',' expr
+                   ;
+
+derivative:
+                    DIFF '(' id ',' id ')' '=' expr
+                    ;
+
+define:             
+                      id  '='  expr 
+                    ;
+
+declare:          
+                    EXTRN  settype declrs
+                    ;
+
+declrs:
+                    declare_one
+                    | declrs ',' declare_one
+                    ;
+
+declare_one:
+                    decl_id
+                    | declare_one  decl_array 
+                    ;
+
+decl_id:
+                    ID
+                      ;
+
+decl_array:        '[' INTCON ']'
+                    | '[' ']'
+                      ;
+
+settype:           /* empty */ 
+                   | INT
+                   | SHORT
+                   | CHAR
+                   | REAL
+                   ;
+		    
+id:
+                    ID
+                    ;
+
+
+bexpr:
+                       expr EQ  expr
+                     | expr NEQ expr
+                     | expr GE  expr
+                     | expr GT  expr
+                     | expr LE  expr
+                     | expr LT  expr
+                     | bexpr AND  bexpr
+                     | bexpr OR   bexpr
+                     | '(' bexpr ')'
+                     ;
+
+expr:
+                     term
+                    |  expr '^' expr
+                    | expr '*' expr
+                    | expr '/' expr
+                    | expr '+' expr
+                    | expr '-' expr
+                    | '-' expr   %prec UNARY
+                    | '+' expr   %prec UNARY
+                    | IF '(' bexpr ')' '{' expr '}' ELSE '{' expr '}'
+                    ;
+
+term:
+                    idexpr
+                    | idexpr arrayref
+                    | INTCON
+                    | FLOATCON
+                    | '(' expr ')'
+                    | '(' error ')'
+                    | idexpr '(' expr ')'
+                    | SUM 
+                     '(' expr ','  idexpr  '=' expr ',' expr ')'
+                    ;
+
+idexpr:
+                    ID
+                    ;
+
+arrayref:            one_idx
+                   | arrayref one_idx
+                    ;
+
+one_idx: 
+                   '[' expr ']'
+                    ;</PRE>
+
+<P>
+<BR> <HR>
+<P><ADDRESS>
+<I>Maorong Zou <BR>
+Tue Nov 13 09:42:48 CST 2001</I>
+</ADDRESS>
+</BODY>
+</HTML>

@@ -1,0 +1,7 @@
+/* ODE specification:  perturbed pendulum */
+
+E=0.10;
+M=0.10;
+
+diff(x,t) = y;
+diff(y,t) = -sin(x)-E*y+M*sin(t);

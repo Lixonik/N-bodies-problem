@@ -1,0 +1,12 @@
+
+
+             rtbp     lorenz    pepe
+
+adolc  40  142.880s  32.410s  40.640s
+taylor 40    6.910s   1.890s   1.230s
+
+adolc  20   25.340s   7.520s   9.540s
+taylor 20    1.840s   0.510s   0.420s
+
+adolc  10    6.770s   2.410s   3.020s
+taylor 10    0.550s   0.150s   0.170s

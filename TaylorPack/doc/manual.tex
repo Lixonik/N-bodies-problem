@@ -1,0 +1,1310 @@
+\documentclass{article}
+\title{{\bf Taylor} User's Manual }
+\author{\`Angel Jorba {\tt <angel@maia.ub.es>} \\
+Maorong Zou {\tt <mzou@math.utexas.edu>}}
+\begin{document}
+\maketitle
+
+\section{What is Taylor}
+{\bf Taylor} is an ODE solver generator. It reads a system of ODEs and
+it outputs an ANSI C routine that performs a single step of the
+numerical integration of these ODEs, by means of the Taylor
+method. Each step of integration chooses the step and the order in an
+adaptive way trying to keep the local error below a given threshold,
+and to minimize the global computational effort. There is also support
+for several extended precision arithmetics.
+
+
+\section{Obtaining Taylor}
+{\bf Taylor} is available via anonymous ftp from
+\begin{tabbing}
+{\tt ftp://ftp.math.utexas.edu:/pub/mzou}\hspace*{5mm} \= (US) \\
+{\tt ftp://ftp.maia.ub.es:/pub/angel} \> (Europe)
+\end{tabbing}
+You can also download {\bf taylor} on the web
+using the URLs
+\begin{tabbing}
+{\tt http://www.math.utexas.edu/users/mzou/taylor/}\hspace*{5mm} \= (US)\\
+{\verb-http://www.maia.ub.es/~angel/taylor/-} \> (Europe)
+\end{tabbing}
+{\bf Taylor} is released under the GNU Public License (GPL), so
+anybody with Internet access is free to get it and to redistribute it.
+The latest version is 1.3.8.
+
+\section{Installing Taylor}
+{\bf Taylor} runs only on a Unix system. It has been tested
+under Linux, SunOS and Solaris. It should compile and run
+on other variant of unices.
+
+After downloading the distribution {\tt taylor-x.y.z.tgz},
+where {\tt x.y.z} is the version number,
+unpack the archive using the command
+
+{\tt tar xvzf taylor-x.y.z.tgz}
+
+\noindent
+or, if your version of {\tt tar} does not handle compressed files, you
+can also use
+
+{\tt gzip -dc taylor-x.y.z.tgz | tar xvf - }
+
+\noindent
+This will create a directory {\tt Taylor-x.y}.
+Change to this directory.
+
+Now, to compile {\bf taylor}, run {\tt make}.
+It will produce the executable {\tt taylor}
+in the current directory.  You need an ANSI 
+C compiler and {\tt lex/yacc} parser generator
+to compile {\bf taylor}. Using {\tt gcc} and
+{\tt flex/bison} is highly recommended.
+
+To install {\bf taylor}, simply copy the executable
+{\bf taylor} and the manual page {\tt src/taylor.1}
+to their destination directories. You can put the binary
+in one of your directories or, if you have the right permissions,
+in a system directory,
+
+{\tt cp taylor /usr/local/bin/taylor}
+
+\noindent
+In this case, you may also want to install the man page,
+
+{\tt cp src/taylor.1 /usr/local/man/man1/taylor.1}
+
+\section{Running Taylor}
+
+\subsection{Input Syntax}\label{sec:is}
+To use {\bf taylor}, the first order of business
+is to prepare an input ASCII file with the system of ODEs.
+Input to {\bf taylor} consists of statements of the form
+\begin{verbatim}
+      id = expr;
+      diff(var, tvar) = expr;
+\end{verbatim}
+where {\tt tvar} is the time variable and {\tt expr} 
+is a valid mathematical expression made from
+numbers, the time variable, the state variables,
+elementary functions $\sin$, $\cos$, $\tan$, $\arctan$, 
+$\sinh$, $\cosh$, $\tanh$,
+$\exp$, and $\log$, using the four arithmetic
+operators and function composition. For example
+\begin{verbatim}
+     a = sin(1) + log(1 + exp(-0.5));
+     b = a + cos(0.1);
+     c = a+b;
+     ff = sin(x+t) * exp(-x*x);
+     diff(x,t) = c * ff - tan(t);
+\end{verbatim}
+are all valid statements.
+
+
+{\bf Taylor} also understands {\tt if-else}
+expressions and non-nested sums. For example,
+{\bf taylor} accepts the following statements:
+\begin{verbatim}
+      ss = sum( i*sin(i * x)+ i *cos(i*t), i=1,10);
+      diff(x,t) = ss;
+      diff(y,t) = if(y>t) {  if(y>0.0) { y } else { 1-y }  }
+                  else    { y+t};
+\end{verbatim}
+
+The detailed input syntax is given in Appendix A.
+
+\subsection{Overall}
+Once the input file is ready, there are two main steps in the
+construction of the Taylor integrator.
+
+First, we should ask {\bf taylor} to produce the code to compute the
+jet of derivatives and the automatic step size (and degree)
+control. This code is arithmetic-independent, in the sense that the
+real numbers are declared as {\tt MY\_FLOAT} (type to be defined
+later) and the arithmetic operations have been replaced by C
+macros. Hence, the selection of basic arithmetic only depends on the
+definition of these macros.
+
+The second step is to ask {\bf taylor} to produce a header file with a
+concrete definition of the type {\tt MY\_FLOAT} and the macros that
+define the basic arithmetic. This file is included by the previous C
+file with the jet of derivatives and the step size control, so that
+the C preprocessor can substitute these macros by the code for
+the desired arithmetic.
+
+We provide header files to use
+some extended precision arithmetics (later we give a concrete list),
+but none of these libraries is included in the {\bf taylor} package;
+the user is supposed to retrieve and install them separately.
+
+To use an arithmetic different from the ones mentioned here, the user
+only needs to introduce the corresponding function calls in the header
+file.
+
+The two previous steps can be combined in a single one, by asking {\bf
+taylor} to put everything (jet, step size and headers) in a single
+file.
+
+The next section contains a simple example, using the standard
+double precision of the computer. Next, in Section~\ref{sec:clo}, we
+will show all the options of the {\bf taylor} program.
+
+\subsection{Example 1}
+Let's save the next four lines in the ASCII file \verb+lorenz.eq1+.
+It specifies the famous Lorenz equation.
+
+\begin{verbatim}
+       RR  = 28.0;
+       diff(x,t) = 10.0* (y - x);
+       diff(y,t) = RR * x - x*z - y;
+       diff(z,t) = x* y - 8.0* z /3.0;
+\end{verbatim}
+
+\noindent
+After saving the file \verb+lorenz.eq1+, let's
+ask {\bf taylor} to generate a solver for us. A first possibility is
+to invoke {\bf taylor} as follows
+\begin{verbatim}
+   taylor -name lrnz -o lorenz.c -jet -step lorenz.eq1
+   taylor -name lrnz -o taylor.h -header
+\end{verbatim}
+The first line creates the file {\tt lorenz.c} ({\tt -o} flag) with
+the code that computes the jet of derivatives ({\tt -jet} flag) and
+the step size control ({\tt -step} flag); the ODE description is read
+from the input file {\tt lorenz.eq1}. The flag {\tt -name} is to tell
+{\bf taylor} the name we want for the function that performs a single
+step of the numerical integration; in this case the name is {\tt
+taylor\_step\_lrnz} (the string after the {\tt -name} flag is appended
+to the string {\tt taylor\_step\_} to get the name of this
+function). The detailed description of the parameters of this function
+is in Section~\ref{sec:or}. The second line produces a header file
+(named {\tt taylor.h}) needed to compile {\tt lorenz.c}, that also
+contains the prototypes of the functions in {\tt lorenz.c} (this is
+the reason for using again the flag {\tt -name}) so the user may also
+want to include it to have these calls properly declared. As we have
+not specified the kind of arithmetic we want, this header file will
+use the standard double precision of the computer.
+
+Then, the user only needs to call this integration routine to compute
+a sequence of points on a given orbit -- this is similar to the
+standard use of most numerical integrators, like Runge-Kutta or
+Adams-Bashford.
+
+As an example, let us ask {\bf taylor} to create a very simple main
+program for the Lorenz system,
+\begin{verbatim}
+   taylor -name lrnz -o main_lrnz.c -main_only lorenz.eq1
+\end{verbatim}
+Now we can compile and link these files,
+\begin{verbatim}
+   gcc -O3 main_lrnz.c lorenz.c -lm -s
+\end{verbatim}
+to produce a binary that will ask us for an initial condition and will
+print a table of values of the corresponding orbit to the screen. A
+look at this main program will give you an idea of how to call the
+Taylor integrator.
+
+There are other ways of invoking {\bf taylor}. For instance,
+\begin{verbatim}
+   taylor -o lorenz.c lorenz.eq1
+\end{verbatim}
+produces a single output file {\tt lorenz.c} that includes the header
+file, a small main program, the step size control code and the
+function to compute the jet of derivatives. In this sense, {\tt
+lorenz.c} contains a full program ready to be compiled and run:
+\begin{verbatim}
+   gcc -O3 lorenz.c -lm
+\end{verbatim}
+If we run the binary ({\tt a.out}), the output looks like
+\begin{verbatim}
+    Enter Initial xx[0]: 0.1
+    Enter Initial xx[1]: 0.2
+    Enter Initial xx[2]: 0.3
+    Enter start time: 0.0
+    Enter stop time: 0.3
+    Enter absolute error tolerance: 0.1e-16
+    Enter relative error tolerance: 0.1e-16
+
+    0.1      0.2      0.3      0.0
+    0.166068 0.355113 0.266465 0.0467065
+    0.296904 0.643972 0.238433 0.0968925
+    0.508526 1.10588  0.225988 0.142787
+    0.823022 1.79068  0.239631 0.18375
+    1.26605  2.75389  0.299485 0.220385
+    1.86192  4.04596  0.440512 0.253231
+    2.63611  5.71608  0.718778 0.282924
+    3.21698  6.96047  0.995948 0.3
+\end{verbatim}
+The output of \verb+a.out+ are the values
+of the state variables, in the order as
+they appear in the input file, plus the value
+of the time variable. For our last example, 
+each row of the output are values of {\tt x},
+{\tt y}, {\tt z} and {\tt t}.
+
+
+\subsubsection{On the ``automatically generated'' main program}
+Since we did not specify the initial conditions in our last
+example, the main program asks us to input them at run time.
+Initial values, 
+error tolerance and stop conditions can be
+specified in the input file. {\em We stress that this information
+is only used to produce the main() driving function.}
+
+The syntax for specifying initial values is:
+\begin{verbatim}
+  initial_values = expr, expr, ..., expr;
+\end{verbatim}
+For example:
+\begin{verbatim}
+  initial_values = cos(0.1)*2, 0.4, exp(0.5);
+\end{verbatim}
+
+For time step, error tolerance and stop conditions,
+{\bf taylor} uses a few reserverd variables (names).
+They are:
+\begin{verbatim}
+start_time = expr;               /* start time */
+stop_time = expr;                /* stop time: stop condition  */
+absolute_error_tolerance = expr; /* absolute error tolerance */
+relative_error_tolerance = expr; /* relative error tolerance */
+number_of_steps=expr;            /* stop condition */
+\end{verbatim}
+Here the right hand expressions must reduce to 
+real constants. \verb+stop_time+ and \verb+number_of_steps+
+provide two mechanisms to stop the integrator. The 
+solver will stop when either condition is met. 
+Please be advised that expressions here are evaluated
+in double precision first, and pass the result to
+the macro \verb+MakeMyFloatC(var,string_form,double_value)+.
+
+For example, we can add the following lines to 
+\verb+lorenz.eq1+.
+\begin{verbatim}
+    initial_values= 0.1,  0.2, 0.3;
+    start_time= 0.0;
+    stop_time = 0.3;
+    absolute_error_tolerance = 0.1e-16;
+    relative_error_tolerance = 0.1e-16;
+\end{verbatim}
+
+\subsubsection{Using extended precision}
+As it has been mentioned before, {\bf taylor} has support for some
+extended precision arithmetics. For instance, assume we want to build
+a Taylor integrator for the Lorenz example, using the GNU Multiple
+Precision library.
+
+The code for the jet of derivatives and the step size (and order)
+control does not depend on the arithmetic. So, we can use the same
+file as before, or to build it again,
+\begin{verbatim}
+   taylor -name lrnz -o lorenz.c -jet -step lorenz.eq1
+\end{verbatim}
+The differences are in the header file:
+\begin{verbatim}
+   taylor -name lrnz -o taylor.h -gmp -header
+\end{verbatim}
+The flag {\tt -gmp} instructs {\bf taylor} to produce a header file to
+use the {\bf gmp} library. As an example, we can ask {\bf taylor} to
+generate a (very simple) main program for this case,
+\begin{verbatim}
+   taylor -name lrnz -o main_lrnz.c -main_only -gmp lorenz.eq1
+\end{verbatim}
+We stress that the {\bf gmp} library is not included in or package. In
+what follows, we assume that it is already installed in the computer.
+\begin{verbatim}
+   gcc -O3 main_lrnz.c lorenz.c -lgmp -s
+\end{verbatim}
+We have also assumed that the {\bf gmp} library is somewhere in the
+default path used by your compiler to look for libraries, otherwise
+you will need to tell the compiler ({\tt -L} flag for {\tt gcc}) where
+to find that library.
+
+\bigskip
+
+\noindent {\bf Important note:} Extended precision libraries usually
+require some specific initializations that must be done by the main
+program. The subroutines produced by {\bf taylor} will produce wrong
+results if these initializations are not done properly. We strongly
+suggest you to read the documentation that comes with these libraries
+before using them.
+
+
+\section{User's guide}
+The next sections contain detailed information about the options of
+the {\bf taylor} program, as well as a more complete description of
+the produced code.
+
+The syntax of the input file has already been explained in
+Section~\ref{sec:is}, except by the use of {\tt extern}
+variables. {\tt extern} variables are used to set parameters in the
+vector field, from any place of the program.
+
+\subsection{Using External Variables}
+In some cases, a vector field can depend on one or several parameters
+and the user is interested in changing them at runtime. Moreover,
+for vector fields that depends on lots of constants,
+e.g. power or fourier expansions,
+it is desirable to have a separate procedure to read in those
+constants, rather than entering them by hand into
+the ODE definitions.  {\bf Taylor} understands
+external variables and external arrays. 
+It treats them as constants when computing the taylor
+coefficients.  Listed below is a short example.
+
+\begin{verbatim}
+ /*  declare some external vars */
+ extern MY_FLOAT  e1, e2, coef[10], freq[10];
+
+ diff(x,t) = e1 * y;
+ diff(y,t) = -x + e2*sum( coef[i] * sin( freq[i] * t), i = 0, 9);
+
+\end{verbatim}
+Let's save the above in \verb+perturbation.eq1+, and ask {\bf
+taylor} to generate a solver for us. 
+\begin{verbatim}
+taylor -step -jet -o perturbation.c -name perturbation perturbation.eq1
+taylor -name perturbation -header -o taylor.h    
+\end{verbatim}
+We'll have to write a driver for our integrator. 
+
+\begin{verbatim}
+/* save in main3.c */
+#include <stdio.h>
+#include <math.h>
+#include "taylor.h"
+/* these are the variables the vector fields 
+ * depends on.
+ */
+MY_FLOAT e1, e2, coef[10], freq[10];
+
+int main(int argc, char **argv)
+{
+   MY_FLOAT  xx[2], t;
+   double    h, abs_err, rel_err, h_return;
+   double    log10abs_err, log10rel_err, endtime;
+   int       i, nsteps = 1000, order=10, direction=1;
+   int       step_ctrl_method=2;
+
+   /* read in e1, e2, coef[] and freq[] 
+    * here, we just assign them to some
+    * values 
+    */
+   e1 = e2 = 1.0;
+   for(i = 0; i < 10; i++) { 
+       coef[i] = 1.0;
+       freq[i] = 0.1*(double) i;
+    }
+
+   /* set initiaial conditions */
+   xx[0] = 0.1;
+   xx[1] = 0.2;
+   t     = 0.0;
+   /* control parameters       */
+   h= 0.001;
+   abs_err = 1.0e-16;
+   rel_err = 1.0e-16;
+   log10abs_err = log10(abs_err); 
+   log10rel_err = log10(rel_err); 
+   endtime = 10.0;
+
+   /* integrate 100 steps */
+   h_return = h; /* thanks to Jason James */
+   while( -- nsteps > 0 && h_return != 0.0 ) {
+      /* do something with xx and t. We just print it */
+      printf("%f %f %f\n", xx[0],xx[1],t);
+      taylor_step_perturbation(&t, &xx[0], direction,
+              step_ctrl_method,log10abs_err, log10rel_err, 
+                               &endtime, &h_return, &order);
+   }
+}
+
+\end{verbatim}
+\noindent
+Now we can compile \verb+perturbation.c+ and \verb+man3.c+
+and run the executable.
+\begin{verbatim}
+   gcc main3.c perturbation.c -lm
+   ./a.out
+\end{verbatim}
+
+
+\subsection{Command Line Options}\label{sec:clo}
+
+{\bf Taylor} support the following command line options.
+
+\begin{verbatim}
+Usage: ./taylor 
+  [-name ODE_NAME]
+  [-o outfile] 
+  [-doubledouble | -qd_real | -dd_real | -gmp | -mpfr
+   -gmp_precision PRECISION | -mpfr_precision PRECISION ]
+  [-main | -header | -jet | -main_only] 
+  [-step STEP_CONTROL_METHOD]
+  [-u | -userdefined] STEP_SIZE_FUNCTION_NAME ORDER_FUNCTION_NAME 
+  [-f77]
+  [-sqrt]
+  [-headername HEADER_FILE_NAME]
+  [-debug] [-help] [-v]  file
+\end{verbatim}
+
+Let us explain them in detail.
+
+\begin{itemize}
+\item{ \verb+-name ODE_NAME+ 
+
+This option specifies a
+name for the system of ODEs. The output functions will have
+the specified name appended. For example, if we run
+{\bf taylor} with the option \verb+-name lorenz+, the output
+procedures will be
+\verb+taylor_step_lorenz+ and
+\verb+taylor_coefficients_lorenz+.
+If name is not specified, {\bf taylor} appends the input
+filename (with non-alpha-numeric characters replaced by
+\verb+_+) to its output procedure names. In the case
+when input is the standard input, the word \verb+_NoName+
+will be used.}
+\item{ \verb+-o outfile+ 
+
+This option specifies an output
+file. If not specified, {\bf taylor} writes its output
+to the standard output.}
+\item{\verb+-doubledouble+
+
+This option, combined with the {\tt -header} flag, signals {\bf
+taylor} to generate a header file to be compiled and linked with Keith
+Martin Briggs' doubledouble library (quadruple precision).
+The output code needs to be compiled by a C++ compiler.
+See
+
+\noindent   
+\verb-http://www.btexact.com/people/briggsk2/doubledouble.html-
+
+\noindent
+for more information about this library.
+
+Note: If the {\tt -header} flag is not used, this flag is
+ignored.}
+\item {{\tt -qd\_real}, {\tt -dd\_real}
+
+These two options, combined with the {\tt -header} flag, force
+{\bf taylor} to generate a header file for the
+quad-double library written by
+David Bailey et al. This library supports
+both the double-double precision ({\tt -dd\_real} flag) and the
+quad-double precision ({\tt -qd\_real} flag).
+The output code needs to be compiled by a C++ compiler.
+See
+
+\verb+http://www.nersc.gov/~dhbailey/mpdist/mpdist.html+
+
+for more info.
+
+Note: If the {\tt -header} flag is not used, these flags are
+ignored.}
+
+\item{\verb+-gmp+ 
+
+This option, combined with the {\tt -header} flag, tells 
+{\bf taylor} to generate a header file for
+the GNU multiprecision library. Please note that
+the current version of GMP (version 3.1) does not
+contain implementation of transcendental
+mathematical functions. For more info, visit
+
+{\tt http://www.swox.com/gmp/}
+
+Note: If the {\tt -header} flag is not used, this flag is
+ignored.}
+
+\item{\verb+-gmp_precision PRECISION+
+
+This flag is almost equivalent to {\tt -gmp}; the only difference is
+when a main() program is generated. If {\tt -gmp} is used the main
+program asks, at runtime, for the lenght (in bits) of the mantissa of
+the {\bf gmp} floating point types. If {\tt -gmp\_precision PRECISION}
+is used, the main program will set the precision to {\tt PRECISION}
+without prompting the user.}
+
+\item{\verb+-main+
+
+Informs {\bf taylor} to generate a very simple \verb+main()+ driving
+routine. This option is equivalent to the options {\tt -main\_only
+-jet -step 1}, so it produces a ``ready-to-run'' C file.  }
+
+\item{\verb+-header+ 
+
+This option tells {\bf taylor} to output the
+header file. The header file contains the definition
+of the {\tt MY\_FLOAT} type (the type used to declare
+real variables), macro definitions
+for arithmetic operations and elementary mathematical 
+function calls. In other words, this file header
+file is responsible for the kind of arithmetic
+used for the numerical integration.
+Hence, the flag {\tt -header} must be combined with
+one of the flags {\tt -doubledouble}, {\tt -gmp}, {\tt -qd\_real}
+or {\tt -dd\_real} to produce a header file for the
+corresponding arithmetic. If none of these flags is
+specified, the standard double precision arithmetic will
+be used.
+
+Moreover, if the flag {\tt -name ODE\_NAME} is also used, the header
+file will also contain the prototypes for the main functions of the
+Taylor integrator.}
+
+\item{\verb+-jet+
+
+This option asks {\bf taylor} to generate only the code that 
+computes the taylor coefficients. The generated routine is
+
+\begin{verbatim}
+MY_FLOAT **taylor_coefficients_ODE_NAME(
+    MY_FLOAT t,  /* input: value of the time variable     */
+    MY_FLOAT *x, /* input: value of the state variables   */
+    int    order /* input: order of the taylor polynomial */
+   )
+\end{verbatim}
+
+The code needs a header
+file (defining the macros for the arithmetic)
+in order to be compiled into object code. The default header
+filename is {\tt taylor.h}.  The header filename can be changed
+using {\verb+-headername NAME+} (see below).
+You can also use the {\verb+-header+} option to include the necessary
+macros in the output file.}
+
+\item{\verb+-main_only+
+
+This option asks {\bf taylor} to generate only
+the \verb+main()+ driving routine. It is useful
+when you want to separate different modules in
+different files. The main driving routine has
+to be linked with the step size control procedure
+and the jet derivative procedure to run.
+}
+
+\item{\verb+-step STEP_SIZE_CONTROL_METHOD+
+
+This option asks {\bf taylor} to generate only the order and step size
+control code supplied by the package. If combined with the {\tt -main}
+or {\tt -main\_only} flags, the value {\tt
+STEP\_SIZE\_CONTROL\_METHOD} is used in the main program to specify
+the step size control. The values of {\tt STEP\_SIZE\_CONTROL\_METHOD}
+can be 0 (fixed step and degree), 1, 2 and 3 (user defined step size
+control; in this case you have to code your own step size and degree
+control). If the flags {\tt -main} and {\tt -main\_only} are not used,
+this value is ignored.
+
+The generated procedure is also the main call to the numerical
+integrator:
+\begin{verbatim}
+int taylor_step_ODE_NAME(MY_FLOAT *time,
+                MY_FLOAT *xvars,
+                int      direction,
+                int      step_ctrl_method,
+                double   log10abserr,
+                double   log10relerr,
+                MY_FLOAT *endtime,
+                MY_FLOAT *stepused,
+                int      *order)
+\end{verbatim}
+This code needs the header file to be compiled (see the remarks
+above). Given an initial condition ({\tt time},{\tt xvars}), this
+function computes a new point on the corresponding orbit. The meaning
+of the parameters is explained in Section~\ref{sec:or}.
+}
+
+\item{\verb+-userdefined STEP_SIZE_FUNCTION_NAME  ORDER_FUNCTION_NAME+
+
+This flag is to specify the names of your own step size and order
+control functions. Then, the code produced with the flag {\tt -step}
+includes the calls to your control functions; to use them, you
+must set {\tt step\_ctrl\_method} to 3 (see Section~\ref{sec:tnu}).
+
+For more details (like the parameters for these control functions)
+look at the source code produced by the {\tt -step} flag.
+}
+
+\item{\verb+-f77+
+
+This option forces {\bf taylor} to output a C wrapper 
+routine for the function
+\verb+taylor_step_ODE_NAME+ that can
+be called from Fortran. This flag is meant to be
+used with the {\tt -step} flag, so the wrapper
+will be stored in the same file as the step size
+control. The prototype of the rutine is
+\begin{verbatim}
+void taylor_f77_ODE_NAME__(MY_FLOAT *time,
+                           MY_FLOAT *xvars,
+                           int      *direction,
+                           int      *step_ctrl_method,
+                           double   *log10abserr,
+                           double   *log10relerr,
+                           MY_FLOAT *endtime,
+                           MY_FLOAT *stepused,
+                           int      *order,
+                           int      *flag)
+\end{verbatim}
+The meaning of these parameters is explained in
+Section~\ref{sec:f77}.}
+
+\item{\verb+-sqrt+
+
+This option tells {\bf taylor} to use the
+function \verb+sqrt+ instead of \verb+pow+
+when evaluating terms like $(x+y)^{-{3\over 2}}$.
+The use of {\tt sqrt} instead of {\tt pow} produces
+code that runs faster.}
+
+\item{\verb+-headername HEADER_FILE_NAME+
+
+When {\bf taylor} generates the code for the jet and/or step size
+control, it assumes that the header file will be named {\tt taylor.h}.
+This flag forces {\bf taylor} to change the name of the file to be
+included by the jet and/or step size control procedures to the new
+name {\tt HEADER\_FILE\_NAME}. Of course, the user is then
+responsible for creating such a header file by combining the flags
+{\tt -o HEADER\_FILE\_NAME} and {\tt -header}. For instance,
+\begin{verbatim}
+taylor -name lz -o l.c -jet -step -headername l.h lorenz.eq1
+\end{verbatim}
+stores the code for the jet of derivatives and step size control in
+the file {\tt l.c}. Moreover, {\tt l.c} includes the header file {\tt
+l.h}. This file has to be created separately:
+\begin{verbatim}
+taylor -name lz -o l.h -header
+\end{verbatim}
+}
+
+\item{\verb+-debug+ or \verb+-v+ 
+
+Print some debug info to stderr.}
+
+\item{\verb+-help+ (or \verb+-h+)
+
+Print a short help
+message.}
+
+\end{itemize}
+
+\noindent
+The default options are set to produce a full C program, using the
+standard double precision of the computer:
+\begin{verbatim}
+   -main_only -header -jet -step 1
+\end{verbatim}
+
+\subsection{The Output Routines}\label{sec:or}
+{\bf Taylor} outputs two main procedures. The first one is the main
+call for the integrator and the second one is a function that computes
+the jet of derivatives. For details on some other routines generated
+by {\bf taylor} (like degree or step size control), see the comments
+in the generated source code.
+
+\subsubsection{The numerical integrator}\label{sec:tnu}
+Its prototype is:
+\begin{verbatim}
+   int taylor_step_ODE_NAME(MY_FLOAT *time,
+                            MY_FLOAT *xvars,
+                            int      direction,
+                            int      step_ctrl_method,
+                            double   log10abserr,
+                            double   log10relerr,
+                            MY_FLOAT *endtime,
+                            MY_FLOAT *stepused,
+                            int      *order);
+\end{verbatim}
+The function \verb+taylor_step_ODE_NAME+ does one step of numerical
+integration of the given system of ODEs, using the control parameters
+passed to it. It returns 1 if \verb+endtime+ is reached, 0 otherwise.
+
+\newpage
+
+\noindent{{\bf Parameters:}
+\begin{itemize}
+\item {\tt time}\newline
+  on input:  time of the initial condition\newline
+  on output: new time
+\item {\tt xvars}\newline
+  on input:  initial condition\newline
+  on output: new condition, corresponding to the (output) time ti
+\item {\tt direction}\newline
+  flag to integrate forward or backwards.\newline
+  \hspace*{5mm} \phantom{$-$}1: forward\newline
+  \hspace*{5mm} $-$1: backwards\newline
+  Note: this flag is ignored if {\tt step\_ctrl\_method} is set to 0.
+\item {\tt step\_ctrl\_method}\newline
+  flag for the step size control. Its possible values are:
+  \begin{itemize}
+  \item[0:] no step size control, so the step and order are
+        provided by the user. The parameter ht is used as step, and
+        the parameter order (see below) is used as the order.
+  \item[1:] standard stepsize control. it uses an
+        approximation to the optimal order and to the radius of
+        convergence of the series to approximate the 'optimal' step
+        size. It tries to keep the absolute and relative errors below
+        the given values. See the paper for more details.
+  \item[2:] as 1, but adding an extra condition on the
+         stepsize h: the terms of the series -- after being multiplied
+         by the suitable power of h -- cannot grow.
+  \item[3:] user defined stepsize control. The code has to
+         be included in the routine {\tt
+         compute\_timestep\_user\_defined} (see the code). The user
+         must also include code for the selection of degree, in the
+         function {\tt compute\_order\_user\_defined}.
+  \end{itemize}
+\item {\tt log10abserr}\newline
+  decimal log of the absolute accuracy required.
+\item {\tt log10relerr}\newline
+  decimal log of the relative accuracy required.
+\item {\tt endtime}\newline
+  if {\tt NULL}, it is ignored. if {\tt step\_ctrl\_method} is set to
+  0, it is also ignored. otherwise, if next step is going to be
+  outside {\tt endtime}, reduce the step size so that the new time
+  {\tt time} is exactly {\tt endtime} (in that case, the function
+  returns 1).
+\item {\tt ht}\newline
+  on input: ignored/used as a time step (see parameter {\tt
+  step\_ctl\_method})\newline
+  on output: time step used
+\item {\tt order}
+  \begin{description}
+  \item input: this parameter is only used if {\tt step\_ctrl\_method}
+        is 0, or if you add the proper code for the case {\tt
+        step\_ctrl\_method}=3.\newline
+        If {\tt step\_ctrl\_method} is 0, its possible values are:\newline
+          $<2$: the program will select degree 2,\newline
+          $\ge 2$: the program will use this degree.
+  \item output: degree used.
+  \end{description}
+
+\end{itemize}
+
+\noindent {\bf Returned value:}
+\begin{itemize}
+\item 0: ok.
+\item 1: ok, and {\tt time}={\tt endtime}.
+\end{itemize}
+
+
+\subsubsection{The jet of derivatives}
+Its prototype is
+\begin{verbatim}
+MY_FLOAT **taylor_coefficients_ODE_NAME(MY_FLOAT t,
+                                        MY_FLOAT *x,
+                                        int order);
+\end{verbatim}
+\verb+taylor_coefficients_ODE_NAME+ returns a {\bf static} two 
+dimensional arrary. The rows are the
+Taylor coefficients of the state variables.
+
+\vspace{3mm}
+\noindent{{\bf{Parameters}}}
+\begin{itemize}
+\item{\verb+t+: value of the time variable. It is used only
+when the system of ODEs is nonautonomous.}
+\item{\verb+x+: value of the state variables.}
+\item{\verb+order+: degree of Taylor polynomial.}
+\end{itemize}
+
+If you want to compute several jets at the same point but with
+increasing orders, then you should consider using the call
+\begin{verbatim}
+MY_FLOAT **taylor_coefficients_ODE_NAMEA(MY_FLOAT t,
+                                         MY_FLOAT *x,
+                                         int order,
+                                         int rflag)
+\end{verbatim}
+(note the ``{\tt A}'' at the end of the name). The first three
+parameters have the same meaning as before, and the meaning of the
+fourth one is:
+\begin{description}
+\item 0: the jet is computed from order 1 to order {\tt order}.
+\item 1: the jet is computed starting from the final order of the last call,
+up to {\tt order}.
+\end{description}
+
+Care must be exercised if you invoke this routine with {\tt rflag=1}.
+If you modify the Taylor coefficients and/or the base point, you need
+to restore them before the next call.
+
+The algorithm used to generate the Taylor coefficients is described in
+Appendix A.
+
+
+\subsubsection{The Fortran 77 wrapper}\label{sec:f77}
+The produced C code cannot be directly called from a Fortran program,
+because Fortran sends all the parameters by address while the C code
+expects some of them by value. So, to call this package from a Fortran
+program we need a wrapping C routine that receives all the parameters 
+by address and calls the integration routine properly. The {\tt -f77}
+flag produces such a routine:
+\begin{verbatim}
+void taylor_f77_ODE_NAME__(MY_FLOAT *time,
+                           MY_FLOAT *xvars,
+                           int      *direction,
+                           int      *step_ctrl_method,
+                           double   *log10abserr,
+                           double   *log10relerr,
+                           MY_FLOAT *endtime,
+                           MY_FLOAT *stepused,
+                           int      *order,
+                           int      *flag)
+\end{verbatim}
+This routine should be called as
+\begin{verbatim}
+        call taylor_f77_ODE_NAME(...)
+\end{verbatim}
+Note that, in the call, we have removed the string ``\_\_'' at the end
+of the name. The reason is that the standard GNU compiler (g77) adds
+``\_\_'' at the end of the name of the procedures and the C compiler
+(gcc) does not.
+
+Important note: different compilers could use different alterations of
+these names. So, if your compilers are not g77/gcc, you may need to
+modify the name of this routine accordingly.
+
+The meaning of the parameters is the same as in the C main call (see
+Section~\ref{sec:tnu}), except that here we have an extra parameter at
+the end of the call, that contains the value returned by the C
+procedure:
+\begin{itemize}
+\item {\tt flag}
+
+  on input: ignored\newline
+  on output: it can return the values
+  \begin{description}
+  \item{\tt 0}: ok.
+  \item{\tt 1}: ok, and {\tt time}={\tt endtime}.
+  \end{description}
+\end{itemize}
+
+
+\subsection{Write a Driving Routine}
+The main driving routine produced by the {\tt -main}
+flag of {\bf taylor}
+is rather simple, it just keeps on integrating the 
+system and print out the solution along the way.
+This may be enough for some tasks, but it is
+definitely too primitive for real applications.
+In this section, we provide two sample
+driving routines.  These examples demonstrate
+what you need to do to write your own driving
+routes. The input files are provided in the doc
+subdirectory in the {\bf taylor} distribution.
+
+We first ask {\bf taylor} to generate
+a integrator and a header file for us. 
+\begin{verbatim}
+   taylor -o lorenz.c -jet -step -name lorenz lorenz.eq1
+   taylor -o taylor.h -header
+\end{verbatim}
+The first command will produce a file \verb+lorenz.c+
+with no driving routine in it.  This file will be
+compiled and linked with our main driving routine.
+The second command generates the header file
+\verb+taylor.h+. It is needed in \verb+lorenz.c+ and
+our main driving function.
+
+
+\vspace{3mm}
+\noindent
+{\bf Using the Supplied Integrator}
+
+\noindent
+Our first example is very similar to the 
+driving routine generated by {\bf taylor}.
+It uses the one step integrator provided by
+{\bf taylor}.
+
+\begin{verbatim}
+/* save as main1.c */
+
+#include <stdio.h>
+#include <math.h>
+#include "taylor.h"
+int main(int argc, char **argv)
+{
+   MY_FLOAT  xx[3], t;
+   double    h, abs_err, rel_err, h_return, log10abs_err;
+   double    log10rel_err, endtime;
+   int       nsteps = 100, step_ctrl_method = 2, direction = 1;
+   int       order = 10;
+   /* set initial conditions */
+   xx[0] = 0.1;
+   xx[1] = 0.2;
+   xx[2] = 0.3;
+   t     = 0.0;
+   /* control parameters       */
+   h= 0.001;
+   abs_err = 1.0e-16;
+   rel_err = 1.0e-16;
+   log10abs_err = log10(abs_err); 
+   log10rel_err = log10(rel_err); 
+   endtime = 10.0;
+
+   /* integrate 100 steps */
+   while( -- nsteps > 0 && h_return != 0) {
+      /* do something with xx and t. We just print it */
+      printf("%f %f %f %f\n", xx[0],xx[1],xx[2],t);
+      taylor_step_lorenz(&t, &xx[0], direction,
+              step_ctrl_method,log10abs_err, log10rel_err, 
+                         &endtime, &h_return, &order);
+   }
+}
+\end{verbatim}
+
+\noindent
+After saving the code in \verb+main1.c+, you can compile
+them using the command
+\begin{verbatim}
+   gcc lorenz.c main1.c -lm
+\end{verbatim}
+and run the executable \verb+a.out+ as before.
+
+
+\vspace{3mm}
+\noindent
+{\bf Write Your Own Driver}
+
+\vspace{2mm}
+\noindent 
+This example provides a skeleton for
+writing your own one step integrator.
+
+\begin{verbatim}
+
+/* save as main2.c */
+
+#include <stdio.h>
+#include <math.h>
+#include "taylor.h"
+
+MY_FLOAT **taylor_coefficients_lorenz(MY_FLOAT, MY_FLOAT *, int);
+
+int main(int argc, char **argv)
+{
+   MY_FLOAT  xx[3], tmp[3], t, **coef;
+   int       j, order=20, nsteps = 100;
+   double    step_size;
+   /* set initiaial conditions */
+   xx[0] = 0.1;
+   xx[1] = 0.2;
+   xx[2] = 0.3;
+   t     = 0.0;
+   /* control parameters       */
+   step_size= 0.1;
+
+   /* integrate 100 steps */
+   while( -- nsteps > 0) {
+      /* do something with xx and t. We just print it */
+      printf("%f %f %f %f\n", xx[0], xx[1], xx[2], t);
+
+      /* compute the taylor coefficients */
+      coef = taylor_coefficients_lorenz(t, xx, order);
+
+      /* now we have the taylor coefficients in coef,
+       * we can analyze them and choose a best step size.
+       * Here we just integrate use the given stepsize.
+       */
+
+       tmp[0] = tmp[1] = tmp[2] = 0.0;
+       for(j=order; j>0; j--) /* sum up the taylor polynomial */
+         { 
+           tmp[0] = (tmp[0] + coef[0][j])* step_size;
+           tmp[1] = (tmp[1] + coef[1][j])* step_size;
+           tmp[2] = (tmp[2] + coef[2][j])* step_size;
+         }
+        /* advance one step */
+        xx[0] = xx[0] + tmp[0];
+        xx[1] = xx[1] + tmp[1];
+        xx[2] = xx[2] + tmp[2];
+        t += step_size; /* advance time */
+     }
+}
+\end{verbatim}
+
+\section{Appendix A: Taylor Grammar}
+{\scriptsize
+\begin{verbatim}
+program:
+                     /* empty */
+                    | stmts ';'
+                    ;
+stmts: 
+                      stmt
+                    | stmts ';' stmt
+                    ;  
+stmt:
+                      derivative
+                    | define
+                    | declare
+                    | control
+                    ;
+
+control:            INITIALV '=' initials
+                    ;
+
+
+initials:          expr
+                   | initials ',' expr
+                   ;
+
+derivative:
+                    DIFF '(' id ',' id ')' '=' expr
+                    ;
+
+define:             
+                      id  '='  expr 
+                    ;
+
+declare:          
+                    EXTRN  settype declrs
+                    ;
+
+declrs:
+                    declare_one
+                    | declrs ',' declare_one
+                    ;
+
+declare_one:
+                    decl_id
+                    | declare_one  decl_array 
+                    ;
+
+decl_id:
+                    ID
+                      ;
+
+decl_array:        '[' INTCON ']'
+                    | '[' ']'
+                      ;
+
+settype:           /* empty */ 
+                   | INT
+                   | SHORT
+                   | CHAR
+                   | REAL
+                   ;
+		    
+id:
+                    ID
+                    ;
+
+
+bexpr:
+                       expr EQ  expr
+                     | expr NEQ expr
+                     | expr GE  expr
+                     | expr GT  expr
+                     | expr LE  expr
+                     | expr LT  expr
+                     | bexpr AND  bexpr
+                     | bexpr OR   bexpr
+                     | '(' bexpr ')'
+                     ;
+
+expr:
+                     term
+                    |  expr '^' expr
+                    | expr '*' expr
+                    | expr '/' expr
+                    | expr '+' expr
+                    | expr '-' expr
+                    | '-' expr   %prec UNARY
+                    | '+' expr   %prec UNARY
+                    | IF '(' bexpr ')' '{' expr '}' ELSE '{' expr '}'
+                    ;
+
+term:
+                    idexpr
+                    | idexpr arrayref
+                    | INTCON
+                    | FLOATCON
+                    | '(' expr ')'
+                    | '(' error ')'
+                    | idexpr '(' expr ')'
+                    | SUM 
+                     '(' expr ','  idexpr  '=' expr ',' expr ')'
+                    ;
+
+idexpr:
+                    ID
+                    ;
+
+arrayref:            one_idx
+                   | arrayref one_idx
+                    ;
+
+one_idx: 
+                   '[' expr ']'
+                    ;
+                  
+\end{verbatim}
+}
+
+\section*{Appendix: The Taylor method}
+Taylor method is one of the best known one step method for solving
+ordinary differential equations numerically. The idea is to
+advance the solution using a truncated Taylor expansion of
+the variables about the current solution.
+Let
+\begin{eqnarray}
+\label{eq:ivp}
+{\bf y}' = f(t, {\bf y})\;\;\;\;\; {\bf y}(t_0) = {\bf y}_0
+\end{eqnarray}
+be an initial value problem and let $h$ be the integration
+step. To find ${\bf y}(t_0+h)$, we expand ${\bf y}$ around
+$t_0$ and obtain
+\begin{equation}
+\label{eq:taylorseries}
+{\bf y}(t_0 +h) = {\bf y}(t_0) + {\bf y}'(t_0) h + {1\over
+{2!}} {\bf y}''(t_0) h^2 + \cdots + {1 \over {k!}}{\bf
+y}^{(k)}(t_0) h^k + \cdots
+\end{equation}
+A numeric approximation of ${\bf y}(t_0+h)$
+is obtained by truncating (\ref{eq:taylorseries})
+at a pre-determined order. 
+
+
+The main problem connected with the Taylor method
+is the need to compute higher derivatives 
+${\bf y}'',{\bf y}''',\cdots, {\bf y}^{(k)}$.
+
+\subsection*{Van der Pol's Equation}
+To illustrate how to derive an integration
+scheme using the Taylor method, let's look
+at a special case of the famous Van der Pol's equation
+\begin{eqnarray}
+\label{eq:vanderpol}
+x'&=&y\cr
+y'&=&(1-x^2)y-x
+\end{eqnarray}
+with initial value $(x, y) = (2, 0)$.
+The second and third order derivatives of $x, y$  with respect to time
+are
+\begin{eqnarray}
+x''&=& (1-x^2)y-x\cr
+y''&=& x^3 -x  - 2 x y^2 + (x^4 - 2 x^2)y\cr
+x'''&=& x^3 -x  - 2 x y^2 + (x^4 - 2 x^2)y\cr
+y'''&=& 2x^3-x^5 + (-1+ 5x^2+3x^4-x^6)y +(-8x+4x^3)y^2 -2y^3
+\end{eqnarray}
+Hence a third order Taylor method for the initial value problem
+(\ref{eq:vanderpol}) is
+\begin{eqnarray*}
+\left(\matrix{x_{n+1}\cr y_{n+1}}\right) &=&
+\left(\matrix{x_n\cr y_n}\right) +
+\left(\matrix{y_n\cr (1-x_n^2)y_n-x_n}\right) h\cr
+ & & \hspace*{-16mm}
+ +{1\over {2!}} \left(\matrix{(1-x_n^2)y_n-x_n\cr
+   x_n^3-x_n-2x_ny_n^2+(x_n^4-2x_n^2)y_n}\right) h^2 \cr
+ & & \hspace*{-16mm}
+ +{1\over {3!}} \left(\matrix{x_n^3-x_n-2x_ny_n^2+(x_n^4-2x_n^2)y_n\cr
+    2x_n^3-x_n^5+(-1+5x_n^2+3x_n^4-x_n^6)y_n+(-8x_n+4x_n^3)y_n^2-2y_n^3}
+\right) h^3\cr
+\left(\matrix{x_0\cr y_0}\right) &=&
+\left(\matrix{2\cr 0}\right)
+\end{eqnarray*}
+As one can see from these equations, 
+expressions for higher order derivatives 
+are quite complicated, and the complexity
+increases dramatically as order increases.
+This difficulty is precisely the reason that
+Taylor method is not widely used.
+
+
+Fortunately, for initial value problems where
+$f$ is composed of polynomials and elementary functions,
+ the higher order derivatives can be
+generated automatically. In fact, this is precisely
+the motivation of writting {\bf taylor}.
+
+\subsection*{Automatic Generation of Taylor Coefficients}
+
+The algorithm for computing Taylor coefficients
+recursively has been known since the 60s and
+is commonly referenced as {\it automatic differentiation}
+in the literature. It has been employed in software packages such
+as ATOFMT.
+A detailed description of the algorithm
+can be found in \cite{JZ} (see more references therein).
+Here we give a brief account of the idea involved.
+
+
+Let $f(t)$ be an analytic function and denote the $i$th
+Taylor coefficient at $t_0$ by
+\begin{eqnarray*}
+(f)_i = {{f^{i}(t_0)} \over {i!}}
+\end{eqnarray*}
+where $f^{i}(t)$ is the $i$th derivative of $f$ at $t_0$. 
+The Taylor expansion of $f(t)$ around $t_0$ can be
+conveniently expressed as
+\begin{eqnarray*}
+f(t_0 +h) = (f)_0 + (f)_1 h + (f)_2 h^2 + \cdots + (f)_n h^n  \cdots
+\end{eqnarray*}
+
+Let $(p)_i, (q)_i$ be the $i$th Taylor coefficients of $p, q$ at
+$t_0$. The Taylor coefficients for $p\pm q$, $pq$ and $p/q$
+can be obtained recursively using the following rules.
+
+\begin{eqnarray}
+\label{eq:recursivea}
+(p\pm q)_i &=& (p)_i \pm (q)_i \cr
+(p q)_i &=& \sum_{r=0}^{i} (p)_r (q)_{i-r} \cr
+\left({p\over q}\right)_i &=& {1\over q}\left\{ 
+(p)_i - \sum_{r=1}^{i} (q)_r \left({p\over q}\right)_{i-r}\right\} \cr
+\end{eqnarray}
+To compute the Taylor coefficients for (\ref{eq:ivp}), one
+first decomposes the right hand side of the differential
+equation into a series of simple expressions by introducing
+new variables, such that  each expression involves
+only one arithmetic operation. These expressions are
+commonly called {\it code lists}. One then uses the
+recursive relations (\ref{eq:recursivea}) and the initial
+values to generate the Taylor coefficients for all the
+the variables.  
+
+For example,
+the Van der Pol equation (\ref{eq:vanderpol}) can be
+decomposed as
+\begin{eqnarray*}
+& & u_1 = x,\;\;  u_2 = y,\;\; u_3 = 1,\;\; u_4= u_1 u_1\cr
+& & u_5 = u_3-u_4,\;\; u_6 = u_5 u_2,\;\; u_7= u_6-u_1\cr
+& & u_1' = u_2, \;\; u_2'= u_7
+\end{eqnarray*}
+Using the initial value $(x_0, y_0)=(2, 0)$, the Taylor coefficients
+of all $u_i$s can be easily generated using (\ref{eq:recursivea}).
+
+
+The Taylor coefficients for elementary functions can also be
+generated recursively. Some of the rules are:
+\begin{eqnarray*}
+(p^a)_i &=& {1 \over p} \sum_{r=0}^{i-1}\left(
+a - { {r(a+1)\over i}}\right)(p)_{i-r}(p^a)_r\;\;\; \mbox{
+where $a$ is a real constant} 
+\end{eqnarray*}
+\begin{eqnarray*}
+(e^p)_i &=& \sum_{r=0}^{i-1} \left(1-{r\over i}\right)
+(e^p)_r (p)_{i-r}\cr
+(\ln p)_i &=& {1\over {p}} \left\{ (p)_i - \sum_{r=1}^{i-1}
+\left(1 - {r\over i}\right)(p)_r(\ln p)_{i-r}\right\}
+\end{eqnarray*}
+\begin{eqnarray*}
+(\sin p)_i &=& \sum_{r=0}^{i-1}\left({{r+1}\over
+i}\right)(\cos p)_{i-1-r} (p)_{r+1}\cr
+(\cos p)_i &=& -\sum_{r=0}^{i-1}\left({{r+1}\over
+i}\right)(\sin p)_{i-1-r} (p)_{r+1}\cr
+\end{eqnarray*}
+\begin{eqnarray*}
+(\tan^{-1} p)_i &=& \sum_{r=0}^{i-1}\left(1 - {r\over i}\right)
+\left( {1 \over {1+p^2}}\right)_r (p)_{k-r}
+\end{eqnarray*}
+
+\begin{thebibliography}{9}
+\bibitem{JZ} \`A. Jorba, M. Zou: A software package for the numerical
+integration of ODE by means of high-order Taylor methods. Preprint,
+2001.
+\end{thebibliography}
+
+\end{document}

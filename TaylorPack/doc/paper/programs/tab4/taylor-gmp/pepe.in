@@ -1,0 +1,11 @@
+/* ODE specification:  perturbed pendulum */
+
+E=0.10;
+M=0.10;
+
+diff(x1,t) = x2;
+diff(x2,t) = -x3-E*x2+M*x5;
+diff(x3,t) = x2*x4;
+diff(x4,t) = -x2*x3;
+diff(x5,t) = x6;
+diff(x6,t) = -x5;

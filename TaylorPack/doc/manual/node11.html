@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<!--Converted with LaTeX2HTML 96.1 (Feb 5, 1996) by Nikos Drakos (nikos@cbl.leeds.ac.uk), CBLU, University of Leeds -->
+<HTML>
+<HEAD>
+<TITLE>Using External Variables</TITLE>
+<META NAME="description" CONTENT="Using External Variables">
+<META NAME="keywords" CONTENT="manual">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+<LINK REL=STYLESHEET HREF="manual.css">
+</HEAD>
+<BODY LANG="EN">
+ <A NAME="tex2html141" HREF="node12.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html139" HREF="node10.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html133" HREF="node10.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html142" HREF="node12.html">Command Line Options</A>
+<B>Up:</B> <A NAME="tex2html140" HREF="node10.html">User's guide</A>
+<B> Previous:</B> <A NAME="tex2html134" HREF="node10.html">User's guide</A>
+<BR> <P>
+<H2><A NAME="SECTION00051000000000000000">Using External Variables</A></H2>
+<P>
+In some cases, a vector field can depend on one or several parameters
+and the user is interested in changing them at runtime. Moreover,
+for vector fields that depends on lots of constants,
+e.g. power or fourier expansions,
+it is desirable to have a separate procedure to read in those
+constants, rather than entering them by hand into
+the ODE definitions.  <B>Taylor</B> understands
+external variables and external arrays. 
+It treats them as constants when computing the taylor
+coefficients.  Listed below is a short example.
+<P>
+<PRE> /*  declare some external vars */
+ extern MY_FLOAT  e1, e2, coef[10], freq[10];
+
+ diff(x,t) = e1 * y;
+ diff(y,t) = -x + e2*sum( coef[i] * sin( freq[i] * t), i = 0, 9);</PRE>
+Let's save the above in <code>perturbation.eq1</code>, and ask <B>
+taylor</B> to generate a solver for us. 
+<PRE>taylor -jet -o perturbation.c -name perturbation perturbation.eq1
+taylor -name perturbation -header -o taylor.h</PRE>
+We'll have to write a driver for our integrator.
+<P>
+<PRE>/* save in main3.c */
+#include &lt;stdio.h&gt;
+#include &lt;math.h&gt;
+#include &quot;taylor.h&quot;
+/* these are the variables the vector fields 
+ * depends on.
+ */
+MY_FLOAT e1, e2, coef[10], freq[10];
+
+int main(int argc, char **argv)
+{
+   MY_FLOAT  xx[2], t;
+   double    h, abs_err, rel_err, h_return;
+   double    log10abs_err, log10rel_err, endtime;
+   int       i, nsteps = 1000, order=10, direction=1;
+   int       step_ctrl_method=2;
+
+   /* read in e1, e2, coef[] and freq[] 
+    * here, we just assign them to some
+    * values 
+    */
+   e1 = e2 = 1.0;
+   for(i = 0; i &lt; 10; i++) { 
+       coef[i] = 1.0;
+       freq[i] = 0.1*(double) i;
+    }
+
+   /* set initiaial conditions */
+   xx[0] = 0.1;
+   xx[1] = 0.2;
+   t     = 0.0;
+   /* control parameters       */
+   h= 0.001;
+   abs_err = 1.0e-16;
+   rel_err = 1.0e-16;
+   log10abs_err = log10(abs_err); 
+   log10rel_err = log10(rel_err); 
+   endtime = 10.0;
+
+   /* integrate 100 steps */
+   while( -- nsteps &gt; 0 &amp;&amp; h_return != 0.0 ) {
+      /* do something with xx and t. We just print it */
+      printf(&quot;%f %f %f\n&quot;, xx[0],xx[1],t);
+      taylor_step_perturbation(&amp;t, &amp;xx[0], direction,
+              step_ctrl_method,log10abs_err, log10rel_err, 
+                               &amp;endtime, &amp;h_return, &amp;order);
+   }
+}</PRE>
+<P>
+Now we can compile <code>perturbation.c</code> and <code>man3.c</code>
+and run the executable.
+<PRE>   gcc main3.c perturbation.c -lm
+   ./a.out</PRE>
+<P>
+<BR> <HR>
+<P><ADDRESS>
+<I>Maorong Zou <BR>
+Tue Nov 13 09:42:48 CST 2001</I>
+</ADDRESS>
+</BODY>
+</HTML>

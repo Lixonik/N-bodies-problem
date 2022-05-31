@@ -1,0 +1,58 @@
+\documentstyle[12pt]{article}
+%
+ \voffset=-3cm
+ \evensidemargin=0cm
+ \oddsidemargin=0cm
+ \textwidth=15cm
+ \textheight=21cm
+%
+%
+% fonts i simbols
+%
+\font\tenbbb=msbm10 scaled\magstep1
+\font\egtbbb=msbm8
+\font\sixbbb=msbm6
+\newfam\bbbfam
+\textfont\bbbfam=\tenbbb
+\scriptfont\bbbfam=\egtbbb
+\scriptscriptfont\bbbfam=\sixbbb
+\newcommand{\Bbb}[1]{{\fam\bbbfam\relax#1}}
+\newcommand{\ZZ}{{\Bbb Z}}
+\newcommand{\sprod}[2]{\left\langle#1,#2\right\rangle} % scalar product
+
+\begin{document}
+\parindent=0pt
+
+This vectorfield models the motion of an infinitessimal particle
+moving close to the equilateral points of the Earth-Moon system:
+\begin{eqnarray*}
+\ddot{x} & = & P(7)\left[-\frac{x-x_E}{r_{PE}^3}(1-\mu_M)-
+         \frac{x+x_E}{r_{PM}^3}\mu_M-x_E(1-2\mu_M)\right]+  \\
+     & & +P(1)+P(2)x+P(3)y+P(4)z+P(5)\dot{x}+P(6)\dot{y},      \\
+\ddot{y} & = & P(7)\left[-\frac{y-y_E}{r_{PE}^3}(1-\mu_M)-
+         \frac{y-y_E}{r_{PM}^3}\mu_M-y_E\right]+P(8)+P(9)x+        \\
+     & & +P(10)y+P(11)z+P(12)\dot{x}+P(13)\dot{y}+P(14)\dot{z},\\
+\ddot{z} & = & P(7)\left[-\frac{z}{r_{PE}^3}(1-\mu_M)-
+         \frac{z}{r_{PM}^3}\mu_M\right]+P(15)+P(16)x+P(17)y+      \\
+     & & +P(18)z+P(19)\dot{y}+P(20)\dot{z},
+\end{eqnarray*}
+where $r_{PE}$, $r_{PM}$ denote the distances from the particle to the
+Earth and Moon, respectively, given by $r_{PE}^2=(x-x_E)^2+(y-y_E)^2+
+z^2$, $r_{PM}^2=(x+x_E)^2+(y-y_E)^2+z^2$. We recall that $x_E=-1/2$,
+$y_E=-\sqrt{3}/2$ for $L_4$ and $x_E=-1/2$, $y_E=\sqrt{3}/2$ for
+$L_5$. Finally, $\mu_M$ is $0.012150298$.
+
+The symbols $P(i)$ that appear in the equations denote functions that
+(only) depend on time in a quasiperiodic way. The are of the form:
+$$
+P(i) = A_{i,0} + \sum_{j=1}^{m}A_{i,j}\cos\theta_j+
+       \sum_{j=1}^{m}B_{i,j}\sin\theta_j,
+$$
+with $\theta _{j} =\sprod{k^{(j)}}{\phi}$, where $k^{(j)}\in\ZZ^5$ and
+$\phi=(\phi_1,\ldots,\phi_5)$, being $\phi_l=\omega_l t+\varphi_l$
+($t$ denotes the time).
+
+\bigskip
+
+
+\end{document}

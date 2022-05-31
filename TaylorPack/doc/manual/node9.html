@@ -1,0 +1,58 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<!--Converted with LaTeX2HTML 96.1 (Feb 5, 1996) by Nikos Drakos (nikos@cbl.leeds.ac.uk), CBLU, University of Leeds -->
+<HTML>
+<HEAD>
+<TITLE>Using extended precision</TITLE>
+<META NAME="description" CONTENT="Using extended precision">
+<META NAME="keywords" CONTENT="manual">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+<LINK REL=STYLESHEET HREF="manual.css">
+</HEAD>
+<BODY LANG="EN">
+ <A NAME="tex2html114" HREF="node10.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html112" HREF="node7.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html108" HREF="node8.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html115" HREF="node10.html">User's guide</A>
+<B>Up:</B> <A NAME="tex2html113" HREF="node7.html">Example 1</A>
+<B> Previous:</B> <A NAME="tex2html109" HREF="node8.html">On the ``automatically generated'' </A>
+<BR> <P>
+<H3><A NAME="SECTION00043200000000000000">Using extended precision</A></H3>
+<P>
+As it has been mentioned before, <B>taylor</B> has support for some
+extended precision arithmetics. For instance, assume we want to build
+a Taylor integrator for the Lorenz example, using the GNU Multiple
+Precision library.
+<P>
+The code for the jet of derivatives and the step size (and order)
+control does not depend on the arithmetic. So, we can use the same
+file as before, or to build it again,
+<PRE>   taylor -name lrnz -o lorenz.c -jet -step lorenz.eq1</PRE>
+The differences are in the header file:
+<PRE>   taylor -name lrnz -o taylor.h -gmp -header</PRE>
+The flag <TT>-gmp</TT> instructs <B>taylor</B> to produce a header file to
+use the <B>gmp</B> library. As an example, we can ask <B>taylor</B> to
+generate a (very simple) main program for this case,
+<PRE>   taylor -name lrnz -o main_lrnz.c -main_only -gmp lorenz.eq1</PRE>
+We stress that the <B>gmp</B> library is not included in or package. In
+what follows, we assume that it is already installed in the computer.
+<PRE>   gcc -O3 main_lrnz.c lorenz.c -lgmp -s</PRE>
+We have also assumed that the <B>gmp</B> library is somewhere in the
+default path used by your compiler to look for libraries, otherwise
+you will need to tell the compiler (<TT>-L</TT> flag for <TT>gcc</TT>) where
+to find that library.
+<P>
+<P>
+<P>
+<B>Important note:</B> Extended precision libraries usually
+require some specific initializations that must be done by the main
+program. The subroutines produced by <B>taylor</B> will produce wrong
+results if these initializations are not done properly. We strongly
+suggest you to read the documentation that comes with these libraries
+before using them.
+<P>
+<BR> <HR>
+<P><ADDRESS>
+<I>Maorong Zou <BR>
+Tue Nov 13 09:42:48 CST 2001</I>
+</ADDRESS>
+</BODY>
+</HTML>

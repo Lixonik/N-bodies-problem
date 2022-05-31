@@ -1,0 +1,249 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<!--Converted with LaTeX2HTML 96.1 (Feb 5, 1996) by Nikos Drakos (nikos@cbl.leeds.ac.uk), CBLU, University of Leeds -->
+<HTML>
+<HEAD>
+<TITLE>Command Line Options</TITLE>
+<META NAME="description" CONTENT="Command Line Options">
+<META NAME="keywords" CONTENT="manual">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+<LINK REL=STYLESHEET HREF="manual.css">
+</HEAD>
+<BODY LANG="EN">
+ <A NAME="tex2html151" HREF="node13.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html149" HREF="node10.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html143" HREF="node11.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html152" HREF="node13.html">The Output Routines</A>
+<B>Up:</B> <A NAME="tex2html150" HREF="node10.html">User's guide</A>
+<B> Previous:</B> <A NAME="tex2html144" HREF="node11.html">Using External Variables</A>
+<BR> <P>
+<H2><A NAME="SECTION00052000000000000000">Command Line Options</A></H2>
+<A NAME="secclo">&#160;</A>
+<P>
+<B>Taylor</B> support the following command line options.
+<P>
+<PRE>Usage: ./taylor 
+  [-name ODE_NAME]
+  [-o outfile] 
+  [-doubledouble | -qd_real | -dd_real | -gmp
+   -gmp_precision PRECISION]
+  [-main | -header | -jet | -main_only] 
+  [-step STEP_CONTROL_METHOD]
+  [-u | -userdefined] STEP_SIZE_FUNCTION_NAME ORDER_FUNCTION_NAME 
+  [-f77]
+  [-sqrt]
+  [-headername HEADER_FILE_NAME]
+  [-debug] [-help] [-v]  file</PRE>
+<P>
+Let us explain them in detail.
+<P>
+<UL><LI> <code>-name ODE_NAME</code>
+<P>
+This option specifies a
+name for the system of ODEs. The output functions will have
+the specified name appended. For example, if we run
+<B>taylor</B> with the option <code>-name lorenz</code>, the output
+procedures will be
+<code>taylor_step_lorenz</code> and
+<code>taylor_coefficients_lorenz</code>.
+If name is not specified, <B>taylor</B> appends the input
+filename (with non-alpha-numeric characters replaced by
+<code>_</code>) to its output procedure names. In the case
+when input is the standard input, the word <code>_NoName</code>
+will be used.<LI> <code>-o outfile</code>
+<P>
+This option specifies an output
+file. If not specified, <B>taylor</B> writes its output
+to the standard output.<LI><code>-doubledouble</code>
+<P>
+This option, combined with the <TT>-header</TT> flag, signals <B>
+taylor</B> to generate a header file to be compiled and linked with Keith
+Martin Briggs' doubledouble library (quadruple precision).
+The output code needs to be compiled by a C++ compiler.
+See
+<P>
+<code>http://www.btexact.com/people/briggsk2/doubledouble.html</code>
+<P>
+for more information about this library.
+<P>
+Note: If the <TT>-header</TT> flag is not used, this flag is
+ignored.<LI> <TT>-qd_real</TT>, <TT>-dd_real</TT>
+<P>
+These two options, combined with the <TT>-header</TT> flag, force
+<B>taylor</B> to generate a header file for the
+quad-double library written by
+David Bailey et al. This library supports
+both the double-double precision (<TT>-dd_real</TT> flag) and the
+quad-double precision (<TT>-qd_real</TT> flag).
+The output code needs to be compiled by a C++ compiler.
+See
+<P>
+<code>http://www.nersc.gov/~dhbailey/mpdist/mpdist.html</code>
+<P>
+for more info.
+<P>
+Note: If the <TT>-header</TT> flag is not used, these flags are
+ignored.<LI><code>-gmp</code>
+<P>
+This option, combined with the <TT>-header</TT> flag, tells 
+<B>taylor</B> to generate a header file for
+the GNU multiprecision library. Please note that
+the current version of GMP (version 3.1) does not
+contain implementation of transcendental
+mathematical functions. For more info, visit
+<P>
+<TT>http://www.swox.com/gmp/</TT>
+<P>
+Note: If the <TT>-header</TT> flag is not used, this flag is
+ignored.<LI><code>-gmp_precision PRECISION</code>
+<P>
+This flag is almost equivalent to <TT>-gmp</TT>; the only difference is
+when a main() program is generated. If <TT>-gmp</TT> is used the main
+program asks, at runtime, for the lenght (in bits) of the mantissa of
+the <B>gmp</B> floating point types. If <TT>-gmp_precision PRECISION</TT>
+is used, the main program will set the precision to <TT>PRECISION</TT>
+without prompting the user.<LI><code>-main</code>
+<P>
+Informs <B>taylor</B> to generate a very simple <code>main()</code> driving
+routine. This option is equivalent to the options <TT>-main_only
+-jet -step 1</TT>, so it produces a ``ready-to-run'' C file.  <LI><code>-header</code>
+<P>
+This option tells <B>taylor</B> to output the
+header file. The header file contains the definition
+of the <TT>MY_FLOAT</TT> type (the type used to declare
+real variables), macro definitions
+for arithmetic operations and elementary mathematical 
+function calls. In other words, this file header
+file is responsible for the kind of arithmetic
+used for the numerical integration.
+Hence, the flag <TT>-header</TT> must be combined with
+one of the flags <TT>-doubledouble</TT>, <TT>-gmp</TT>, <TT>-qd_real</TT>
+or <TT>-dd_real</TT> to produce a header file for the
+corresponding arithmetic. If none of these flags is
+specified, the standard double precision arithmetic will
+be used.
+<P>
+Moreover, if the flag <TT>-name ODE_NAME</TT> is also used, the header
+file will also contain the prototypes for the main functions of the
+Taylor integrator.<LI><code>-jet</code>
+<P>
+This option asks <B>taylor</B> to generate only the code that 
+computes the taylor coefficients. The generated routine is
+<P>
+<PRE>MY_FLOAT **taylor_coefficients_ODE_NAME(
+    MY_FLOAT t,  /* input: value of the time variable     */
+    MY_FLOAT *x, /* input: value of the state variables   */
+    int    order /* input: order of the taylor polynomial */
+   )</PRE>
+<P>
+The code needs a header
+file (defining the macros for the arithmetic)
+in order to be compiled into object code. The default header
+filename is <TT>taylor.h</TT>.  The header filename can be changed
+using <code>-headername NAME</code> (see below).
+You can also use the <code>-header</code> option to include the necessary
+macros in the output file.<LI><code>-main_only</code>
+<P>
+This option asks <B>taylor</B> to generate only
+the <code>main()</code> driving routine. It is useful
+when you want to separate different modules in
+different files. The main driving routine has
+to be linked with the step size control procedure
+and the jet derivative procedure to run.
+<LI><code>-step STEP_SIZE_CONTROL_METHOD</code>
+<P>
+This option asks <B>taylor</B> to generate only the order and step size
+control code supplied by the package. If combined with the <TT>-main</TT>
+or <TT>-main_only</TT> flags, the value <TT>
+STEP_SIZE_CONTROL_METHOD</TT> is used in the main program to specify
+the step size control. The values of <TT>STEP_SIZE_CONTROL_METHOD</TT>
+can be 0 (fixed step and degree), 1, 2 and 3 (user defined step size
+control; in this case you have to code your own step size and degree
+control). If the flags <TT>-main</TT> and <TT>-main_only</TT> are not used,
+this value is ignored.
+<P>
+The generated procedure is also the main call to the numerical
+integrator:
+<PRE>int taylor_step_ODE_NAME(MY_FLOAT *time,
+                MY_FLOAT *xvars,
+                int      direction,
+                int      step_ctrl_method,
+                double   log10abserr,
+                double   log10relerr,
+                MY_FLOAT *endtime,
+                MY_FLOAT *stepused,
+                int      *order)</PRE>
+This code needs the header file to be compiled (see the remarks
+above). Given an initial condition (<TT>time</TT>,<TT>xvars</TT>), this
+function computes a new point on the corresponding orbit. The meaning
+of the parameters is explained in Section&nbsp;<A HREF="node13.html#secor">5.3</A>.
+<LI><code>-userdefined STEP_SIZE_FUNCTION_NAME  ORDER_FUNCTION_NAME</code>
+<P>
+This flag is to specify the names of your own step size and order
+control functions. Then, the code produced with the flag <TT>-step</TT>
+includes the calls to your control functions; to use them, you
+must set <TT>step_ctrl_method</TT> to 3 (see Section&nbsp;<A HREF="node14.html#sectnu">5.3.1</A>).
+<P>
+For more details (like the parameters for these control functions)
+look at the source code produced by the <TT>-step</TT> flag.
+<LI><code>-f77</code>
+<P>
+This option forces <B>taylor</B> to output a C wrapper 
+routine for the function
+<code>taylor_step_ODE_NAME</code> that can
+be called from Fortran. This flag is meant to be
+used with the <TT>-step</TT> flag, so the wrapper
+will be stored in the same file as the step size
+control. The prototype of the rutine is
+<PRE>void taylor_f77_ODE_NAME__(MY_FLOAT *time,
+                           MY_FLOAT *xvars,
+                           int      *direction,
+                           int      *step_ctrl_method,
+                           double   *log10abserr,
+                           double   *log10relerr,
+                           MY_FLOAT *endtime,
+                           MY_FLOAT *stepused,
+                           int      *order,
+                           int      *flag)</PRE>
+The meaning of these parameters is explained in
+Section&nbsp;<A HREF="node16.html#secf77">5.3.3</A>.<LI><code>-sqrt</code>
+<P>
+This option tells <B>taylor</B> to use the
+function <code>sqrt</code> instead of <code>pow</code>
+when evaluating terms like  <IMG WIDTH=65 HEIGHT=31 ALIGN=MIDDLE ALT="tex2html_wrap_inline591" SRC="img10.gif"  > .
+The use of <TT>sqrt</TT> instead of <TT>pow</TT> produces
+code that runs faster.<LI><code>-headername HEADER_FILE_NAME</code>
+<P>
+When <B>taylor</B> generates the code for the jet and/or step size
+control, it assumes that the header file will be named <TT>taylor.h</TT>.
+This flag forces <B>taylor</B> to change the name of the file to be
+included by the jet and/or step size control procedures to the new
+name <TT>HEADER_FILE_NAME</TT>. Of course, the user is then
+responsible for creating such a header file by combining the flags
+<TT>-o HEADER_FILE_NAME</TT> and <TT>-header</TT>. For instance,
+<PRE>taylor -name lz -o l.c -jet -step -headername l.h lorenz.eq1</PRE>
+stores the code for the jet of derivatives and step size control in
+the file <TT>l.c</TT>. Moreover, <TT>l.c</TT> includes the header file <TT>
+l.h</TT>. This file has to be created separately:
+<PRE>taylor -name lz -o l.h -header</PRE>
+<LI><code>-debug</code> or <code>-v</code>
+<P>
+Print some debug info to stderr.<LI><code>-help</code> (or <code>-h</code>)
+<P>
+Print a short help
+message.
+<P>
+</UL>
+<P>
+The default options are set to produce a full C program, using the
+standard double precision of the computer:
+<PRE>   -main_only -header -jet -step 1</PRE>
+<P>
+<HR><A NAME="tex2html151" HREF="node13.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html149" HREF="node10.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html143" HREF="node11.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html152" HREF="node13.html">The Output Routines</A>
+<B>Up:</B> <A NAME="tex2html150" HREF="node10.html">User's guide</A>
+<B> Previous:</B> <A NAME="tex2html144" HREF="node11.html">Using External Variables</A>
+<P><ADDRESS>
+<I>Maorong Zou <BR>
+Tue Nov 13 09:42:48 CST 2001</I>
+</ADDRESS>
+</BODY>
+</HTML>

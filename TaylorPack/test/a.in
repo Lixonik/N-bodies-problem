@@ -1,0 +1,38 @@
+K= 1.339534491455829e-03;
+mu=9.5387536e-4;
+m_sat=2.85515017438988e-4;
+umu=1.0-mu;
+mu2=mu*mu;
+alfa=mu*umu;
+beta=m_sat/(1.0+m_sat);
+
+amaj=beta*x2*x6-beta*x3*x5/mu+K;
+r_quad=x1*x1;
+r_quadi=1./r_quad;
+a=mu*x1-x2;
+b=umu*x1+x2;
+r13_quad=a*a+x3*x3;
+r13_cubi=r13_quad^(-3./2);   
+r23_quad=b*b+x3*x3;
+r23_cubi=r23_quad^(-3./2);
+aux=amaj*r_quadi/alfa;
+aux2=aux/(alfa*x1);
+
+diff(x1, t)=x4;
+diff(x2, t)=-x3*aux+x5/mu;
+diff(x3, t)=x2*aux+x6;
+diff(x4, t)=amaj*aux2-r_quadi-m_sat*(a*r13_cubi+b*r23_cubi);
+diff(x5, t)=-x6*aux*mu+(1+m_sat)*(alfa*a*r13_cubi-mu2*b*r23_cubi);
+diff(x6, t)=x5*aux/mu-(1+m_sat)*(umu*x3*r13_cubi+mu*x3*r23_cubi);
+
+
+
+initialValues = 9.994994553824330e-01, -1.834333346368040, 0.0, 0.0, 0.0, 7.380940388291189e-01;
+absoluteErrorTolerance = 1.0E-16; 
+relativeErrorTolerance = 1.0E-16; 
+numberOfSteps=20000;              
+stopTime = 1000.0;                 
+startTime = 0.0;                  
+stepSize = 0.01;                 
+
+   

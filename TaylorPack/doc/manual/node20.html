@@ -1,0 +1,50 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<!--Converted with LaTeX2HTML 96.1 (Feb 5, 1996) by Nikos Drakos (nikos@cbl.leeds.ac.uk), CBLU, University of Leeds -->
+<HTML>
+<HEAD>
+<TITLE>Van der Pol's Equation</TITLE>
+<META NAME="description" CONTENT="Van der Pol's Equation">
+<META NAME="keywords" CONTENT="manual">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+<LINK REL=STYLESHEET HREF="manual.css">
+</HEAD>
+<BODY LANG="EN">
+ <A NAME="tex2html230" HREF="node21.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html228" HREF="node19.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html222" HREF="node19.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html231" HREF="node21.html">Automatic Generation of Taylor </A>
+<B>Up:</B> <A NAME="tex2html229" HREF="node19.html">Appendix: The Taylor method</A>
+<B> Previous:</B> <A NAME="tex2html223" HREF="node19.html">Appendix: The Taylor method</A>
+<BR> <P>
+<H2><A NAME="SECTION00071000000000000000">Van der Pol's Equation</A></H2>
+<P>
+To illustrate how to derive an integration
+scheme using the Taylor method, let's look
+at a special case of the famous Van der Pol's equation
+<P><A NAME="eqvanderpol">&#160;</A> <IMG WIDTH=500 HEIGHT=36 ALIGN=BOTTOM ALT="eqnarray297" SRC="img18.gif"  > <P>
+with initial value (<I>x</I>, <I>y</I>) = (2, 0).
+The second and third order derivatives of <I>x</I>, <I>y</I>  with respect to time
+are
+<P> <IMG WIDTH=509 HEIGHT=75 ALIGN=BOTTOM ALT="eqnarray300" SRC="img19.gif"  > <P>
+Hence a third order Taylor method for the initial value problem
+(<A HREF="node20.html#eqvanderpol">3</A>) is
+<P> <IMG WIDTH=544 HEIGHT=159 ALIGN=BOTTOM ALT="eqnarray303" SRC="img20.gif"  > <P>
+As one can see from these equations, 
+expressions for higher order derivatives 
+are quite complicated, and the complexity
+increases dramatically as order increases.
+This difficulty is precisely the reason that
+Taylor method is not widely used.
+<P>
+Fortunately, for initial value problems where
+<I>f</I> is composed of polynomials and elementary functions,
+ the higher order derivatives can be
+generated automatically. In fact, this is precisely
+the motivation of writting <B>taylor</B>.
+<P>
+<BR> <HR>
+<P><ADDRESS>
+<I>Maorong Zou <BR>
+Tue Nov 13 09:42:48 CST 2001</I>
+</ADDRESS>
+</BODY>
+</HTML>

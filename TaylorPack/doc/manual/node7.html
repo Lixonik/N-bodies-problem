@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<!--Converted with LaTeX2HTML 96.1 (Feb 5, 1996) by Nikos Drakos (nikos@cbl.leeds.ac.uk), CBLU, University of Leeds -->
+<HTML>
+<HEAD>
+<TITLE>Example 1</TITLE>
+<META NAME="description" CONTENT="Example 1">
+<META NAME="keywords" CONTENT="manual">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+<LINK REL=STYLESHEET HREF="manual.css">
+</HEAD>
+<BODY LANG="EN">
+ <A NAME="tex2html94" HREF="node8.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html92" HREF="node4.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html88" HREF="node6.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html95" HREF="node8.html">On the ``automatically generated'' </A>
+<B>Up:</B> <A NAME="tex2html93" HREF="node4.html">Running Taylor</A>
+<B> Previous:</B> <A NAME="tex2html89" HREF="node6.html">Overall</A>
+<BR> <P>
+<H2><A NAME="SECTION00043000000000000000">Example 1</A></H2>
+<P>
+Let's save the next four lines in the ASCII file <code>lorenz.eq1</code>.
+It specifies the famous Lorenz equation.
+<P>
+<PRE>       RR  = 28.0;
+       diff(x,t) = 10.0* (y - x);
+       diff(y,t) = RR * x - x*z - y;
+       diff(z,t) = x* y - 8.0* z /3.0;</PRE>
+<P>
+After saving the file <code>lorenz.eq1</code>, let's
+ask <B>taylor</B> to generate a solver for us. A first possibility is
+to invoke <B>taylor</B> as follows
+<PRE>   taylor -name lrnz -o lorenz.c -jet -step lorenz.eq1
+   taylor -name lrnz -o taylor.h -header</PRE>
+The first line creates the file <TT>lorenz.c</TT> (<TT>-o</TT> flag) with
+the code that computes the jet of derivatives (<TT>-jet</TT> flag) and
+the step size control (<TT>-step</TT> flag); the ODE description is read
+from the input file <TT>lorenz.eq1</TT>. The flag <TT>-name</TT> is to tell
+<B>taylor</B> the name we want for the function that performs a single
+step of the numerical integration; in this case the name is <TT>
+taylor_step_lrnz</TT> (the string after the <TT>-name</TT> flag is appended
+to the string <TT>taylor_step_</TT> to get the name of this
+function). The detailed description of the parameters of this function
+is in Section&nbsp;<A HREF="node13.html#secor">5.3</A>. The second line produces a header file
+(named <TT>taylor.h</TT>) needed to compile <TT>lorenz.c</TT>, that also
+contains the prototypes of the functions in <TT>lorenz.c</TT> (this is
+the reason for using again the flag <TT>-name</TT>) so the user may also
+want to include it to have these calls properly declared. As we have
+not specified the kind of arithmetic we want, this header file will
+use the standard double precision of the computer.
+<P>
+Then, the user only needs to call this integration routine to compute
+a sequence of points on a given orbit - this is similar to the
+standard use of most numerical integrators, like Runge-Kutta or
+Adams-Bashford.
+<P>
+As an example, let us ask <B>taylor</B> to create a very simple main
+program for the Lorenz system,
+<PRE>   taylor -name lrnz -o main_lrnz.c -main_only lorenz.eq1</PRE>
+Now we can compile and link these files,
+<PRE>   gcc -O3 main_lrnz.c lorenz.c -lm -s</PRE>
+to produce a binary that will ask us for an initial condition and will
+print a table of values of the corresponding orbit to the screen. A
+look at this main program will give you an idea of how to call the
+Taylor integrator.
+<P>
+There are other ways of invoking <B>taylor</B>. For instance,
+<PRE>   taylor -o lorenz.c lorenz.eq1</PRE>
+produces a single output file <TT>lorenz.c</TT> that includes the header
+file, a small main program, the step size control code and the
+function to compute the jet of derivatives. In this sense, <TT>
+lorenz.c</TT> contains a full program ready to be compiled and run:
+<PRE>   gcc -O3 lorenz.c -lm</PRE>
+If we run the binary (<TT>a.out</TT>), the output looks like
+<PRE>    Enter Initial xx[0]: 0.1
+    Enter Initial xx[1]: 0.2
+    Enter Initial xx[2]: 0.3
+    Enter start time: 0.0
+    Enter stop time: 0.3
+    Enter absolute error tolerance: 0.1e-16
+    Enter relative error tolerance: 0.1e-16
+
+    0.1      0.2      0.3      0.0
+    0.166068 0.355113 0.266465 0.0467065
+    0.296904 0.643972 0.238433 0.0968925
+    0.508526 1.10588  0.225988 0.142787
+    0.823022 1.79068  0.239631 0.18375
+    1.26605  2.75389  0.299485 0.220385
+    1.86192  4.04596  0.440512 0.253231
+    2.63611  5.71608  0.718778 0.282924
+    3.21698  6.96047  0.995948 0.3</PRE>
+The output of <code>a.out</code> are the values
+of the state variables, in the order as
+they appear in the input file, plus the value
+of the time variable. For our last example, 
+each row of the output are values of <TT>x</TT>,
+<TT>y</TT>, <TT>z</TT> and <TT>t</TT>.
+<P>
+<BR> <HR>
+<UL> 
+<LI> <A NAME="tex2html96" HREF="node8.html#SECTION00043100000000000000">On the ``automatically generated'' main program</A>
+<LI> <A NAME="tex2html97" HREF="node9.html#SECTION00043200000000000000">Using extended precision</A>
+<HR><A NAME="tex2html94" HREF="node8.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html92" HREF="node4.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html88" HREF="node6.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html95" HREF="node8.html">On the ``automatically generated'' </A>
+<B>Up:</B> <A NAME="tex2html93" HREF="node4.html">Running Taylor</A>
+<B> Previous:</B> <A NAME="tex2html89" HREF="node6.html">Overall</A>
+<P><ADDRESS>
+<I>Maorong Zou <BR>
+Tue Nov 13 09:42:48 CST 2001</I>
+</ADDRESS>
+</BODY>
+</HTML>

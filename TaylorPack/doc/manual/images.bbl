@@ -1,0 +1,17 @@
+\small\def\em{\sl} \newcommand{\noopsort}[1]{} \newcommand{\printfirst}[2]{#1}
+  \newcommand{\singleletter}[1]{#1} \newcommand{\switchargs}[2]{#2#1}
+  \def\uppertwodots{\"}
+\begin{thebibliography}{1}
+
+\bibitem{moore}
+Ramon~E. Moore.
+\newblock {\em Interval Analysis}.
+\newblock Prentice-Hall, Englewood Cliffs, N.J., 1966.
+
+\bibitem{rall}
+Louis~B. Rall.
+\newblock {\em Automatic Differentiation: {T}echniques and Applications},
+  volume 120 of {\em Lecture Notes in Computer Science}.
+\newblock Springer Verlag, Berlin, 1981.
+
+\end{thebibliography}

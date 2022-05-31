@@ -1,0 +1,27 @@
+/* 
+ * sample input
+ *
+ *  Usage:
+ *   taylor -main -o a.c  test5.in
+ *   cc -o test5 a.c -lm
+ */
+
+/* control parameters */
+initialValues = 2.0, 3.0; /* initial values */
+absoluteErrorTolerance = 1.0E-16;      /* error tolerance for step control */
+relativeErrorTolerance = 1.0E-16;      /* error tolerance for step control */
+stopTime = 100.0;                      /* stop time */
+startTime = 0.0;                       /* start time */
+
+/* ODE specification */
+A=2/5.0;
+B=6/5.0;
+a=0.03;
+b=0.78539816339; /* pi/4 */
+
+x'=A+x*(x*y-B-1) + a*cos(b*t);
+y'=x*(B-x*y);
+
+
+
+

@@ -1,0 +1,15 @@
+/* ODE specification: rtbp */
+mu=0.01;
+umu=1-mu;
+r2=x1*x1+x2*x2+x3*x3;
+rps2=r2-2*mu*x1+mu*mu;
+rps3i=rps2^(-3./2);
+rpj2=r2+2*(1-mu)*x1+(1-mu)*(1-mu);
+rpj3i=rpj2^(-3./2);
+
+diff(x1, t)= x4+x2;
+diff(x2, t)= x5-x1;
+diff(x3, t)= x6;
+diff(x4, t)= x5-(x1-mu)*(umu*rps3i)-(x1+umu)*(mu*rpj3i);
+diff(x5, t)=-x4-x2*(umu*rps3i+mu*rpj3i);
+diff(x6, t)=-x3*(umu*rps3i+mu*rpj3i);

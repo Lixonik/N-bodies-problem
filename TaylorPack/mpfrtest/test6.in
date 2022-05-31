@@ -1,0 +1,30 @@
+/* 
+ * sample input
+ *
+ *  Usage:
+ *   taylor -main -o a.c  test6.in
+ *   cc -o test6 a.c -lm
+ */
+
+/* control parameters */
+initialValues = 1.0, 1.0; /* initial values */
+absoluteErrorTolerance = 1.0E-16;      /* error tolerance for step control */
+relativeErrorTolerance = 1.0E-20;      /* error tolerance for step control */
+stopTime = 100.0;                      /* stop time */
+startTime = 0.0;                       /* start time */
+
+
+/* ODE specification */
+diff(x, t) = (-x - alpha * x + f * y) / s;
+diff(y, t) = w * (alpha - y);
+alpha = (1 - x + sqrt(4*q*x + (1 - x)*(1 - x))) / (2 * q);
+q = 8.375E-6;
+s = 77.27;
+w = 0.161;
+f = 1;
+
+
+
+
+
+

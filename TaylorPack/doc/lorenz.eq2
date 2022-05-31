@@ -1,0 +1,13 @@
+ RR  = 28.0;
+ diff(x,t) = 10.0* (y - x);
+ diff(y,t) = RR * x - x*z - y;
+ diff(z,t) = x* y - 8.0* z /3.0;
+
+
+ initial_values= 0.1, 0.2,  0.3;
+ start_time= 0.0;
+ stop_time = 0.3;
+ minimal_step = 0.0001;
+ maximal_step = 0.1;
+ absolute_error_tolerance = 0.1e-16;
+ relative_error_tolerance = 0.1e-16;

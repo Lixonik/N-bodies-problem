@@ -1,0 +1,6 @@
+To compile the programs in this directory, it is necessary to have the
+ADOL-C package installed in your machine, and you may need to edit the
+makefile and modify the lines
+
+ADOL_H=-I/usr/include/adolc
+ADOL_LIB=-ladolc

@@ -1,0 +1,61 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<!--Converted with LaTeX2HTML 96.1 (Feb 5, 1996) by Nikos Drakos (nikos@cbl.leeds.ac.uk), CBLU, University of Leeds -->
+<HTML>
+<HEAD>
+<TITLE>Overall</TITLE>
+<META NAME="description" CONTENT="Overall">
+<META NAME="keywords" CONTENT="manual">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+<LINK REL=STYLESHEET HREF="manual.css">
+</HEAD>
+<BODY LANG="EN">
+ <A NAME="tex2html86" HREF="node7.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html84" HREF="node4.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html78" HREF="node5.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html87" HREF="node7.html">Example 1</A>
+<B>Up:</B> <A NAME="tex2html85" HREF="node4.html">Running Taylor</A>
+<B> Previous:</B> <A NAME="tex2html79" HREF="node5.html">Input Syntax</A>
+<BR> <P>
+<H2><A NAME="SECTION00042000000000000000">Overall</A></H2>
+<P>
+Once the input file is ready, there are two main steps in the
+construction of the Taylor integrator.
+<P>
+First, we should ask <B>taylor</B> to produce the code to compute the
+jet of derivatives and the automatic step size (and degree)
+control. This code is arithmetic-independent, in the sense that the
+real numbers are declared as <TT>MY_FLOAT</TT> (type to be defined
+later) and the arithmetic operations have been replaced by C
+macros. Hence, the selection of basic arithmetic only depends on the
+definition of these macros.
+<P>
+The second step is to ask <B>taylor</B> to produce a header file with a
+concrete definition of the type <TT>MY_FLOAT</TT> and the macros that
+define the basic arithmetic. This file is included by the previous C
+file with the jet of derivatives and the step size control, so that
+the C preprocessor can substitute these macros by the code for
+the desired arithmetic.
+<P>
+We provide header files to use
+some extended precision arithmetics (later we give a concrete list),
+but none of these libraries is included in the <B>taylor</B> package;
+the user is supposed to retrieve and install them separately.
+<P>
+To use an arithmetic different from the ones mentioned here, the user
+only needs to introduce the corresponding function calls in the header
+file.
+<P>
+The two previous steps can be combined in a single one, by asking <B>
+taylor</B> to put everything (jet, step size and headers) in a single
+file.
+<P>
+The next section contains a simple example, using the standard
+double precision of the computer. Next, in Section&nbsp;<A HREF="node12.html#secclo">5.2</A>, we
+will show all the options of the <B>taylor</B> program.
+<P>
+<BR> <HR>
+<P><ADDRESS>
+<I>Maorong Zou <BR>
+Tue Nov 13 09:42:48 CST 2001</I>
+</ADDRESS>
+</BODY>
+</HTML>

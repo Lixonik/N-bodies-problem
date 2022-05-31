@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<!--Converted with LaTeX2HTML 96.1 (Feb 5, 1996) by Nikos Drakos (nikos@cbl.leeds.ac.uk), CBLU, University of Leeds -->
+<HTML>
+<HEAD>
+<TITLE>The numerical integrator</TITLE>
+<META NAME="description" CONTENT="The numerical integrator">
+<META NAME="keywords" CONTENT="manual">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+<LINK REL=STYLESHEET HREF="manual.css">
+</HEAD>
+<BODY LANG="EN">
+ <A NAME="tex2html174" HREF="node15.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html172" HREF="node13.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html166" HREF="node13.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html175" HREF="node15.html">The jet of derivatives</A>
+<B>Up:</B> <A NAME="tex2html173" HREF="node13.html">The Output Routines</A>
+<B> Previous:</B> <A NAME="tex2html167" HREF="node13.html">The Output Routines</A>
+<BR> <P>
+<H3><A NAME="SECTION00053100000000000000">The numerical integrator</A></H3>
+<A NAME="sectnu">&#160;</A>
+Its prototype is:
+<PRE>   int taylor_step_ODE_NAME(MY_FLOAT *time,
+                            MY_FLOAT *xvars,
+                            int      direction,
+                            int      step_ctrl_method,
+                            double   log10abserr,
+                            double   log10relerr,
+                            MY_FLOAT *endtime,
+                            MY_FLOAT *stepused,
+                            int      *order);</PRE>
+The function <code>taylor_step_ODE_NAME</code> does one step of numerical
+integration of the given system of ODEs, using the control parameters
+passed to it. It returns 1 if <code>endtime</code> is reached, 0 otherwise.
+<P>
+{<B>Parameters:</B>
+<UL><LI> <TT>time</TT><BR>
+  on input:  time of the initial condition<BR>
+  on output: new time<LI> <TT>xvars</TT><BR>
+  on input:  initial condition<BR>
+  on output: new condition, corresponding to the (output) time ti<LI> <TT>direction</TT><BR>
+  flag to integrate forward or backwards.<BR>
+  -1: forward<BR>
+  : backwards<BR>
+  Note: this flag is ignored if <TT>step_ctrl_method</TT> is set to 0.<LI> <TT>step_ctrl_method</TT><BR>
+  flag for the step size control. Its possible values are:
+  <DL COMPACT><DT><STRONG>0:</STRONG>
+<DD> no step size control, so the step and order are
+        provided by the user. The parameter ht is used as step, and
+        the parameter order (see below) is used as the order.
+  <DT><STRONG>1:</STRONG>
+<DD> standard stepsize control. it uses an
+        approximation to the optimal order and to the radius of
+        convergence of the series to approximate the 'optimal' step
+        size. It tries to keep the absolute and relative errors below
+        the given values. See the paper for more details.
+  <DT><STRONG>2:</STRONG>
+<DD> as 1, but adding an extra condition on the
+         stepsize h: the terms of the series - after being multiplied
+         by the suitable power of h - cannot grow.
+  <DT><STRONG>3:</STRONG>
+<DD> user defined stepsize control. The code has to
+         be included in the routine <TT>
+         compute_timestep_user_defined</TT> (see the code). The user
+         must also include code for the selection of degree, in the
+         function <TT>compute_order_user_defined</TT>.
+<P>
+ </DL><LI> <TT>log10abserr</TT><BR>
+  decimal log of the absolute accuracy required.<LI> <TT>log10relerr</TT><BR>
+  decimal log of the relative accuracy required.<LI> <TT>endtime</TT><BR>
+  if <TT>NULL</TT>, it is ignored. if <TT>step_ctrl_method</TT> is set to
+  0, it is also ignored. otherwise, if next step is going to be
+  outside <TT>endtime</TT>, reduce the step size so that the new time
+  <TT>time</TT> is exactly <TT>endtime</TT> (in that case, the function
+  returns 1).<LI> <TT>ht</TT><BR>
+  on input: ignored/used as a time step (see parameter <TT>
+  step_ctl_method</TT>)<BR>
+  on output: time step used<LI> <TT>order</TT>
+  <DL ><DT><DD> input: this parameter is only used if <TT>step_ctrl_method</TT>
+        is 0, or if you add the proper code for the case <TT>
+        step_ctrl_method</TT>=3.<BR>
+        If <TT>step_ctrl_method</TT> is 0, its possible values are:<BR>
+          ;<I>SPMlt</I>;2: the program will select degree 2,<BR>
+           <IMG WIDTH=22 HEIGHT=22 ALIGN=MIDDLE ALT="tex2html_wrap_inline599" SRC="img11.gif"  > : the program will use this degree.
+  <DT><DD> output: degree used.
+<P>
+ </DL></UL>
+<P>
+<B>Returned value:</B>
+<UL><LI> 0: ok.<LI> 1: ok, and <TT>time</TT>=<TT>endtime</TT>.
+</UL><HR><A NAME="tex2html174" HREF="node15.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html172" HREF="node13.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html166" HREF="node13.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html175" HREF="node15.html">The jet of derivatives</A>
+<B>Up:</B> <A NAME="tex2html173" HREF="node13.html">The Output Routines</A>
+<B> Previous:</B> <A NAME="tex2html167" HREF="node13.html">The Output Routines</A>
+<P><ADDRESS>
+<I>Maorong Zou <BR>
+Tue Nov 13 09:42:48 CST 2001</I>
+</ADDRESS>
+</BODY>
+</HTML>

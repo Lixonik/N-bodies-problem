@@ -1,0 +1,61 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<!--Converted with LaTeX2HTML 96.1 (Feb 5, 1996) by Nikos Drakos (nikos@cbl.leeds.ac.uk), CBLU, University of Leeds -->
+<HTML>
+<HEAD>
+<TITLE>The jet of derivatives</TITLE>
+<META NAME="description" CONTENT="The jet of derivatives">
+<META NAME="keywords" CONTENT="manual">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+<LINK REL=STYLESHEET HREF="manual.css">
+</HEAD>
+<BODY LANG="EN">
+ <A NAME="tex2html184" HREF="node16.html"><IMG WIDTH=37 HEIGHT=24 ALIGN=BOTTOM ALT="next" SRC="/figs/next_motif.gif"></A> <A NAME="tex2html182" HREF="node13.html"><IMG WIDTH=26 HEIGHT=24 ALIGN=BOTTOM ALT="up" SRC="/figs/up_motif.gif"></A> <A NAME="tex2html176" HREF="node14.html"><IMG WIDTH=63 HEIGHT=24 ALIGN=BOTTOM ALT="previous" SRC="/figs/previous_motif.gif"></A>   <BR>
+<B> Next:</B> <A NAME="tex2html185" HREF="node16.html">The Fortran 77 wrapper</A>
+<B>Up:</B> <A NAME="tex2html183" HREF="node13.html">The Output Routines</A>
+<B> Previous:</B> <A NAME="tex2html177" HREF="node14.html">The numerical integrator</A>
+<BR> <P>
+<H3><A NAME="SECTION00053200000000000000">The jet of derivatives</A></H3>
+<P>
+Its prototype is
+<PRE>MY_FLOAT **taylor_coefficients_ODE_NAME(MY_FLOAT t,
+                                        MY_FLOAT *x,
+                                        int order);</PRE>
+<code>taylor_coefficients_ODE_NAME</code> returns a <B>static</B> two 
+dimensional arrary. The rows are the
+Taylor coefficients of the state variables.
+<P>
+<B>Parameters</B>
+<UL><LI><code>t</code>: value of the time variable. It is used only
+when the system of ODEs is nonautonomous.<LI><code>x</code>: value of the state variables.<LI><code>order</code>: degree of Taylor polynomial.
+</UL>
+<P>
+If you want to compute several jets at the same point but with
+increasing orders, then you should consider using the call
+<PRE>MY_FLOAT **taylor_coefficients_ODE_NAMEA(MY_FLOAT t,
+                                         MY_FLOAT *x,
+                                         int order,
+                                         int rflag)</PRE>
+(note the ``<TT>A</TT>'' at the end of the name). The first three
+parameters have the same meaning as before, and the meaning of the
+fourth one is:
+<DL ><DT><DD> 0: the jet is computed from order 1 to order <TT>order</TT>.
+<DT><DD> 1: the jet is computed starting from the final order of the last call,
+up to <TT>order</TT>.
+<P>
+ </DL>
+<P>
+Care must be exercised if you invoke this routine with <TT>rflag=1</TT>.
+If you modify the Taylor coefficients and/or the base point, you need
+to restore them before the next call.
+<P>
+The algorithm used to generate the Taylor coefficients is described in
+Appendix A.
+<P>
+<BR> <HR>
+<P><ADDRESS>
+<I>Maorong Zou <BR>
+Tue Nov 13 09:42:48 CST 2001</I>
+</ADDRESS>
+</BODY>
+</HTML>

@@ -1,0 +1,12 @@
+set xtics 0,250000
+plot 'amd/ham.res' t 'AMD' w l, 'hp/ham.res' t 'HP' w l, 'sun/ham.res' t 'SUN' w l
+set term po eps 20
+set output 'nonintel.eps'
+replot
+
+set yrange[-400:100]
+set xtics 0,250000
+plot 'O0/ham.res' t 'O0' w l, 'O1/ham.res' t 'O1' w l, 'O2/ham.res' t 'O2' w l
+set term po eps 20
+set output 'intel.eps'
+replot

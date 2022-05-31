@@ -1,0 +1,32 @@
+\select@language {british}
+\select@language {british}
+\contentsline {section}{\numberline {1}Introduction}{3}
+\contentsline {section}{\numberline {2}A short summary on automatic differentiation}{5}
+\contentsline {subsection}{\numberline {2.1}Rules of automatic differentiation}{6}
+\contentsline {subsection}{\numberline {2.2}An example: The Van der Pol equation}{7}
+\contentsline {section}{\numberline {3}Degree and step size control}{8}
+\contentsline {subsection}{\numberline {3.1}The effect of roundoff errors}{9}
+\contentsline {subsubsection}{\numberline {3.1.1}On the Taylor polynomial}{9}
+\contentsline {subsubsection}{\numberline {3.1.2}On the normalized derivatives}{9}
+\contentsline {subsection}{\numberline {3.2}On the optimal selections}{10}
+\contentsline {subsection}{\numberline {3.3}Estimations of order and step size}{12}
+\contentsline {subsection}{\numberline {3.4}High accuracy computations}{13}
+\contentsline {section}{\numberline {4}Software implementation}{14}
+\contentsline {subsection}{\numberline {4.1}The input file}{14}
+\contentsline {subsection}{\numberline {4.2}The jet of normalized derivatives}{14}
+\contentsline {subsection}{\numberline {4.3}Order and step size control}{15}
+\contentsline {subsubsection}{\numberline {4.3.1}First step size control}{15}
+\contentsline {subsubsection}{\numberline {4.3.2}Second step size control}{15}
+\contentsline {subsubsection}{\numberline {4.3.3}User defined step size control}{16}
+\contentsline {subsection}{\numberline {4.4}Extended arithmetic}{16}
+\contentsline {subsection}{\numberline {4.5}Using the package}{17}
+\contentsline {section}{\numberline {5}Some tests and comparisons}{19}
+\contentsline {subsection}{\numberline {5.1}The Restricted Three-Body Problem}{19}
+\contentsline {subsubsection}{\numberline {5.1.1}Local error}{20}
+\contentsline {subsubsection}{\numberline {5.1.2}Global error}{20}
+\contentsline {subsubsection}{\numberline {5.1.3}On the influence of the underlying arithmetic}{23}
+\contentsline {subsubsection}{\numberline {5.1.4}Extended precision calculations}{23}
+\contentsline {subsection}{\numberline {5.2}Speed}{25}
+\contentsline {subsubsection}{\numberline {5.2.1}A simple comparison with ADOL-C}{27}
+\contentsline {section}{\numberline {6}Conclusions}{29}
+\contentsline {section}{References}{29}
